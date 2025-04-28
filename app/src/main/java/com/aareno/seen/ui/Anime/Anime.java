@@ -1,11 +1,14 @@
 package com.aareno.seen.ui.Anime;
 
 import java.io.Serializable;
+import java.util.Date;
 
 public class Anime implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private int id;
+
+    private Date finishedDate;
     private String titleRomaji;
     private String titleEnglish;
     private String coverImageUrl;
@@ -51,5 +54,13 @@ public class Anime implements Serializable {
         if (this.watchedEpisodes > 0) {
             this.watchedEpisodes--;
         }
+    }
+
+    public void markAsFinished() {
+        this.finishedDate = new Date(); // Current date
+    }
+
+    public Date getFinishedDate() {
+        return finishedDate;
     }
 }
