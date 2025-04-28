@@ -2,7 +2,7 @@ package com.aareno.seen.ui.Anime;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -12,7 +12,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aareno.seen.R;
-import com.aareno.seen.ui.Anime.Anime;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -31,6 +30,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class SearchAnimeActivity extends AppCompatActivity {
+    private static final String TAG = "SearchAnimeActivity";
     private EditText searchEditText;
     private Button searchButton;
     private RecyclerView recyclerView;
@@ -53,12 +53,25 @@ public class SearchAnimeActivity extends AppCompatActivity {
         // Setup RecyclerView
         animeAdapter = new AnimeSearchAdapter(animeList, new AnimeSearchAdapter.OnItemClickListener() {
             @Override
-            public void onItemClick(Anime anime) {
-                // Return selected anime to previous activity
-                Intent resultIntent = new Intent();
-                resultIntent.putExtra("selected_anime", anime);
-                setResult(RESULT_OK, resultIntent);
-                finish();
+            public void onAddToWatchingClick(Anime anime) {
+                try {
+                    // Log the anime details
+                    Log.d(TAG, "Adding anime: " + anime.getTitleRomaji());
+                    Log.d(TAG, "Anime ID: " + anime.getId());
+                    Log.d(TAG, "Anime Cover URL: " + anime.getCoverImageUrl());
+
+                    // Create an intent to return the selected anime
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("selected_anime", anime);
+                    setResult(RESULT_OK, resultIntent);
+                    finish(); // Close the search activity
+                } catch (Exception e) {
+                    // Log any exceptions
+                    Log.e(TAG, "Error adding anime to watching list", e);
+                    Toast.makeText(SearchAnimeActivity.this,
+                            "Error adding anime: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
@@ -66,12 +79,9 @@ public class SearchAnimeActivity extends AppCompatActivity {
         recyclerView.setAdapter(animeAdapter);
 
         // Search button click listener
-        searchButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String query = searchEditText.getText().toString();
-                searchAnime(query);
-            }
+        searchButton.setOnClickListener(v -> {
+            String query = searchEditText.getText().toString();
+            searchAnime(query);
         });
     }
 
@@ -87,7 +97,6 @@ public class SearchAnimeActivity extends AppCompatActivity {
                         "    title { " +
                         "      romaji " +
                         "      english " +
-                        "      native " +
                         "    } " +
                         "    coverImage { " +
                         "      large " +
@@ -110,13 +119,10 @@ public class SearchAnimeActivity extends AppCompatActivity {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(SearchAnimeActivity.this,
-                                "Search failed: " + e.getMessage(),
-                                Toast.LENGTH_SHORT).show();
-                    }
+                runOnUiThread(() -> {
+                    Toast.makeText(SearchAnimeActivity.this,
+                            "Search failed: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
                 });
             }
 
@@ -145,17 +151,19 @@ public class SearchAnimeActivity extends AppCompatActivity {
                         searchResults.add(anime);
                     }
 
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            animeList.clear();
-                            animeList.addAll(searchResults);
-                            animeAdapter.notifyDataSetChanged();
-                        }
+                    runOnUiThread(() -> {
+                        animeList.clear();
+                        animeList.addAll(searchResults);
+                        animeAdapter.notifyDataSetChanged();
                     });
 
                 } catch (JSONException e) {
                     e.printStackTrace();
+                    runOnUiThread(() -> {
+                        Toast.makeText(SearchAnimeActivity.this,
+                                "Error parsing search results",
+                                Toast.LENGTH_SHORT).show();
+                    });
                 }
             }
         });

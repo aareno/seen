@@ -70,17 +70,18 @@ public class MainActivity extends AppCompatActivity {
             if (data != null) {
                 Anime selectedAnime = (Anime) data.getSerializableExtra("selected_anime");
                 if (selectedAnime != null) {
-                    // Handle the selected anime
-                    // For now, just show a toast
+                    // Add to watching list
+                    AnimeFragment.addToWatchingList(selectedAnime);
+
+                    // Show toast notification
                     Toast.makeText(this,
-                            "Selected Anime: " + selectedAnime.getTitleRomaji(),
+                            "Added " + selectedAnime.getTitleRomaji() + " to watching list",
                             Toast.LENGTH_SHORT).show();
 
-                    // TODO: Add logic to save or process the selected anime
-                    // For example, you might want to:
-                    // - Save to a local database
-                    // - Add to a watchlist
-                    // - Open a detail view
+                    // Refresh the Anime Fragment to show updated list
+                    getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, new AnimeFragment())
+                            .commit();
                 }
             }
         }
