@@ -35,6 +35,11 @@ dependencies {
 
     implementation(libs.appcompat)
     implementation(libs.material)
+    // OkHttp
+    implementation(libs.okhttp)
+    // Glide
+    implementation(libs.gson)
+    implementation(libs.glide)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

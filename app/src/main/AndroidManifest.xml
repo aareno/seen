@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+
     <!-- Add internet permission if you'll be fetching data online -->
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -15,6 +16,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Seen"
         tools:targetApi="31">
+
+        <activity
+            android:name=".ui.Anime.SearchAnimeActivity"
+            android:exported="false"/>
 
         <!-- Main Activity - This is the entry point of your app -->
         <activity
