@@ -68,6 +68,7 @@ public class AnimeSearchAdapter extends RecyclerView.Adapter<AnimeSearchAdapter.
                     listener.onAddToWatchingClick(currentAnime);
                 }
             });
+
         }
 
         public void bind(Anime anime) {

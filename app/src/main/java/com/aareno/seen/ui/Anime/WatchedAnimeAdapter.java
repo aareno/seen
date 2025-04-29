@@ -1,4 +1,4 @@
-package com.aareno.seen;
+package com.aareno.seen.ui.Anime;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -12,7 +12,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.aareno.seen.R;
-import com.aareno.seen.ui.Anime.Anime;
 import com.bumptech.glide.Glide;
 
 import java.text.SimpleDateFormat;

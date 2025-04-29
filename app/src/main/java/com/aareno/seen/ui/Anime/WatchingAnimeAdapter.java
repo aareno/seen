@@ -20,11 +20,17 @@ import java.util.List;
 public class WatchingAnimeAdapter extends ArrayAdapter<Anime> {
     private Context context;
     private List<Anime> animeList;
+    private OnWatchedButtonClickListener watchedButtonClickListener;
 
-    public WatchingAnimeAdapter(@NonNull Context context, List<Anime> animeList) {
+    public interface OnWatchedButtonClickListener {
+        void onWatchedButtonClick(Anime anime);
+    }
+
+    public WatchingAnimeAdapter(@NonNull Context context, List<Anime> animeList, OnWatchedButtonClickListener listener) {
         super(context, 0, animeList);
         this.context = context;
         this.animeList = animeList;
+        this.watchedButtonClickListener = listener;
     }
 
     @NonNull
@@ -43,6 +49,7 @@ public class WatchingAnimeAdapter extends ArrayAdapter<Anime> {
         TextView episodesTextView = listItem.findViewById(R.id.tv_episode_count);
         Button incrementButton = listItem.findViewById(R.id.btn_plus);
         Button decrementButton = listItem.findViewById(R.id.btn_minus);
+        Button watchedButton = listItem.findViewById(R.id.btn_watched);
 
         // Set anime title
         titleTextView.setText(currentAnime.getTitleRomaji());
@@ -65,6 +72,13 @@ public class WatchingAnimeAdapter extends ArrayAdapter<Anime> {
         decrementButton.setOnClickListener(v -> {
             currentAnime.decrementEpisodes();
             notifyDataSetChanged();
+        });
+
+        // Watched Button
+        watchedButton.setOnClickListener(v -> {
+            if (watchedButtonClickListener != null) {
+                watchedButtonClickListener.onWatchedButtonClick(currentAnime);
+            }
         });
 
         return listItem;
