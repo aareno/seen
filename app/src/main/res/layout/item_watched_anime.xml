@@ -30,5 +30,16 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"/>
+
+        <Button
+            android:id="@+id/btn_delete"
+            android:layout_width="100dp"
+            android:layout_height="40dp"
+            android:text="Delete"
+            android:textSize="10sp"/>
+
+
     </LinearLayout>
+
+
 </LinearLayout>

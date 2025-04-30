@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -47,6 +48,9 @@ public class SearchAnimeActivity extends AppCompatActivity {
         searchButton = findViewById(R.id.search_button);
         recyclerView = findViewById(R.id.search_recycler_view);
 
+        ImageButton backButton = findViewById(R.id.back_button);
+        backButton.setOnClickListener(v -> onBackPressed());
+
         // Initialize anime list
         animeList = new ArrayList<>();
 
@@ -62,6 +66,7 @@ public class SearchAnimeActivity extends AppCompatActivity {
 
                     // Create an intent to return the selected anime
                     Intent resultIntent = new Intent();
+                    anime.setWatching(true);
                     resultIntent.putExtra("selected_anime", anime);
                     setResult(RESULT_OK, resultIntent);
                     finish(); // Close the search activity

@@ -32,14 +32,24 @@ android {
 }
 
 dependencies {
+    implementation(libs.room.common.jvm)
+    implementation(libs.room.runtime.android)
+    val room_version = "2.7.1"
 
+    // components
     implementation(libs.appcompat)
     implementation(libs.material)
+
     // OkHttp
     implementation(libs.okhttp)
     // Glide
     implementation(libs.gson)
     implementation(libs.glide)
+    annotationProcessor(libs.room.compiler)
+
+    // database
+
+    // test
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

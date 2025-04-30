@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -22,11 +23,20 @@ public class WatchedAnimeAdapter extends ArrayAdapter<Anime> {
     private Context context;
     private List<Anime> watchedAnimeList;
     private SimpleDateFormat dateFormat;
+    private OnDeleteClickListener deleteClickListener;
 
-    public WatchedAnimeAdapter(@NonNull Context context, List<Anime> watchedAnimeList) {
+    // Interface for delete button click
+    public interface OnDeleteClickListener {
+        void onDeleteClick(Anime anime);
+    }
+
+    public WatchedAnimeAdapter(@NonNull Context context,
+                               List<Anime> watchedAnimeList,
+                               OnDeleteClickListener deleteClickListener) {
         super(context, 0, watchedAnimeList);
         this.context = context;
         this.watchedAnimeList = watchedAnimeList;
+        this.deleteClickListener = deleteClickListener;
         this.dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
     }
 
@@ -44,6 +54,7 @@ public class WatchedAnimeAdapter extends ArrayAdapter<Anime> {
         ImageView coverImageView = listItem.findViewById(R.id.anime_cover);
         TextView titleTextView = listItem.findViewById(R.id.anime_title);
         TextView finishedDateTextView = listItem.findViewById(R.id.finished_date);
+        Button deleteButton = listItem.findViewById(R.id.btn_delete); // Add this button to your layout
 
         // Set anime title
         titleTextView.setText(currentAnime.getTitleRomaji());
@@ -60,6 +71,13 @@ public class WatchedAnimeAdapter extends ArrayAdapter<Anime> {
         Glide.with(context)
                 .load(currentAnime.getCoverImageUrl())
                 .into(coverImageView);
+
+        // Set up delete button
+        deleteButton.setOnClickListener(v -> {
+            if (deleteClickListener != null) {
+                deleteClickListener.onDeleteClick(currentAnime);
+            }
+        });
 
         return listItem;
     }

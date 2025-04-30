@@ -21,16 +21,22 @@ public class WatchingAnimeAdapter extends ArrayAdapter<Anime> {
     private Context context;
     private List<Anime> animeList;
     private OnWatchedButtonClickListener watchedButtonClickListener;
+    private OnEpisodeChangeListener episodeChangeListener;
 
     public interface OnWatchedButtonClickListener {
         void onWatchedButtonClick(Anime anime);
     }
 
-    public WatchingAnimeAdapter(@NonNull Context context, List<Anime> animeList, OnWatchedButtonClickListener listener) {
+    public interface OnEpisodeChangeListener {
+        void onEpisodeChanged(Anime anime);
+    }
+
+    public WatchingAnimeAdapter(@NonNull Context context, List<Anime> animeList, OnWatchedButtonClickListener listener, OnEpisodeChangeListener episodeChangeListener) {
         super(context, 0, animeList);
         this.context = context;
         this.animeList = animeList;
         this.watchedButtonClickListener = listener;
+        this.episodeChangeListener = episodeChangeListener;
     }
 
     @NonNull
@@ -66,12 +72,14 @@ public class WatchingAnimeAdapter extends ArrayAdapter<Anime> {
         incrementButton.setOnClickListener(v -> {
             currentAnime.incrementEpisodes();
             notifyDataSetChanged();
+            episodeChangeListener.onEpisodeChanged(currentAnime);
         });
 
         // Decrement button
         decrementButton.setOnClickListener(v -> {
             currentAnime.decrementEpisodes();
             notifyDataSetChanged();
+            episodeChangeListener.onEpisodeChanged(currentAnime);
         });
 
         // Watched Button
