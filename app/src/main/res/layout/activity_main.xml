@@ -21,11 +21,13 @@
 
             <ImageButton
                 android:id="@+id/btn_undo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:src="@android:drawable/ic_menu_revert"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Undo"/>
+                android:contentDescription="Undo"
+                android:padding="12dp"
+                android:layout_marginStart="8dp"/>
 
             <View
                 android:layout_width="0dp"
@@ -34,11 +36,14 @@
 
             <ImageButton
                 android:id="@+id/btn_add"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:src="@android:drawable/ic_input_add"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Add"/>
+                android:contentDescription="Add"
+                android:padding="12dp"
+                android:layout_marginEnd="8dp"/>
+
 
         </LinearLayout>
     </androidx.appcompat.widget.Toolbar>
