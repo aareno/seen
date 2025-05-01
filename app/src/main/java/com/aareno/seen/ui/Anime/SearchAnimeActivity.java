@@ -1,8 +1,12 @@
 package com.aareno.seen.ui.Anime;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -85,8 +89,26 @@ public class SearchAnimeActivity extends AppCompatActivity {
 
         // Search button click listener
         searchButton.setOnClickListener(v -> {
-            String query = searchEditText.getText().toString();
-            searchAnime(query);
+            // Show keyboard and focus on search EditText
+            searchEditText.requestFocus();
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.showSoftInput(searchEditText, InputMethodManager.SHOW_IMPLICIT);
+        });
+
+        // Handle enter/return key press
+        searchEditText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
+                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                // Hide keyboard
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(searchEditText.getWindowToken(), 0);
+
+                // Perform search
+                String query = searchEditText.getText().toString();
+                searchAnime(query);
+                return true;
+            }
+            return false;
         });
     }
 

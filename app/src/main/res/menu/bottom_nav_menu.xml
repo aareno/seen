@@ -2,16 +2,16 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_anime"
-        android:icon="@android:drawable/ic_input_add"
+        android:icon="@drawable/sword"
         android:title="Anime"/>
 
     <item
         android:id="@+id/nav_kdrama"
-        android:icon="@android:drawable/ic_input_add"
+        android:icon="@drawable/rose"
         android:title="K-Drama"/>
 
     <item
         android:id="@+id/nav_tv_movies"
-        android:icon="@android:drawable/ic_input_add"
+        android:icon="@drawable/movie"
         android:title="TV/Movies"/>
 </menu>

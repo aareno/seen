@@ -1,5 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="6dp"
+    app:cardBackgroundColor="?attr/colorPrimary"
+    app:cardUseCompatPadding="true">
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
@@ -35,7 +46,10 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:text="-"
+                android:backgroundTint="#B0BEC5"
+                android:textColor="?attr/colorPrimary"
                 android:textSize="16sp"/>
+
 
             <TextView
                 android:id="@+id/tv_episode_count"
@@ -50,15 +64,20 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:text="+"
+                android:backgroundTint="#2196F3"
+                android:textColor="?attr/colorPrimary"
                 android:textSize="16sp"/>
         </LinearLayout>
         <Button
             android:id="@+id/btn_watched"
-            android:layout_width="100dp"
-            android:layout_height="40dp"
-            android:text="Watched"
-            android:textSize="10sp"/>
+            android:layout_width="120dp"
+            android:layout_height="60dp"
+            android:backgroundTint="#4CAF50"
+            android:text="✔ Mark as Watched"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="12sp"/>
 
     </LinearLayout>
 
 </LinearLayout>
+    </androidx.cardview.widget.CardView>

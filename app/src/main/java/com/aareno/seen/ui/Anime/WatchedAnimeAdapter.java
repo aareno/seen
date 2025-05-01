@@ -4,13 +4,12 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.aareno.seen.R;
 import com.bumptech.glide.Glide;
@@ -19,21 +18,18 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 
-public class WatchedAnimeAdapter extends ArrayAdapter<Anime> {
+public class WatchedAnimeAdapter extends RecyclerView.Adapter<WatchedAnimeAdapter.ViewHolder> {
+
     private Context context;
     private List<Anime> watchedAnimeList;
     private SimpleDateFormat dateFormat;
     private OnDeleteClickListener deleteClickListener;
 
-    // Interface for delete button click
     public interface OnDeleteClickListener {
         void onDeleteClick(Anime anime);
     }
 
-    public WatchedAnimeAdapter(@NonNull Context context,
-                               List<Anime> watchedAnimeList,
-                               OnDeleteClickListener deleteClickListener) {
-        super(context, 0, watchedAnimeList);
+    public WatchedAnimeAdapter(Context context, List<Anime> watchedAnimeList, OnDeleteClickListener deleteClickListener) {
         this.context = context;
         this.watchedAnimeList = watchedAnimeList;
         this.deleteClickListener = deleteClickListener;
@@ -42,43 +38,48 @@ public class WatchedAnimeAdapter extends ArrayAdapter<Anime> {
 
     @NonNull
     @Override
-    public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-        View listItem = convertView;
-        if (listItem == null) {
-            listItem = LayoutInflater.from(context).inflate(R.layout.item_watched_anime, parent, false);
-        }
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(context).inflate(R.layout.item_watched_anime, parent, false);
+        return new ViewHolder(view);
+    }
 
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Anime currentAnime = watchedAnimeList.get(position);
+        holder.bind(currentAnime);
+    }
 
-        // Find views
-        ImageView coverImageView = listItem.findViewById(R.id.anime_cover);
-        TextView titleTextView = listItem.findViewById(R.id.anime_title);
-        TextView finishedDateTextView = listItem.findViewById(R.id.finished_date);
-        Button deleteButton = listItem.findViewById(R.id.btn_delete); // Add this button to your layout
+    @Override
+    public int getItemCount() {
+        return watchedAnimeList.size();
+    }
 
-        // Set anime title
-        titleTextView.setText(currentAnime.getTitleRomaji());
+    class ViewHolder extends RecyclerView.ViewHolder {
+        ImageView coverImageView;
+        TextView titleTextView;
+        TextView finishedDateTextView;
+        Button deleteButton;
 
-        // Set finished date
-        if (currentAnime.getFinishedDate() != null) {
-            finishedDateTextView.setText("Finished: " +
-                    dateFormat.format(currentAnime.getFinishedDate()));
-        } else {
-            finishedDateTextView.setText("Finished: Unknown");
+        ViewHolder(View itemView) {
+            super(itemView);
+            coverImageView = itemView.findViewById(R.id.anime_cover);
+            titleTextView = itemView.findViewById(R.id.anime_title);
+            finishedDateTextView = itemView.findViewById(R.id.finished_date);
+            deleteButton = itemView.findViewById(R.id.btn_delete);
         }
 
-        // Load cover image
-        Glide.with(context)
-                .load(currentAnime.getCoverImageUrl())
-                .into(coverImageView);
+        void bind(Anime currentAnime) {
+            titleTextView.setText(currentAnime.getTitleEnglish());
+            finishedDateTextView.setText(currentAnime.getFinishedDate() != null
+                    ? "Finished: " + dateFormat.format(currentAnime.getFinishedDate())
+                    : "Finished: Unknown");
+            Glide.with(context).load(currentAnime.getCoverImageUrl()).into(coverImageView);
 
-        // Set up delete button
-        deleteButton.setOnClickListener(v -> {
-            if (deleteClickListener != null) {
-                deleteClickListener.onDeleteClick(currentAnime);
-            }
-        });
-
-        return listItem;
+            deleteButton.setOnClickListener(v -> {
+                if (deleteClickListener != null) {
+                    deleteClickListener.onDeleteClick(currentAnime);
+                }
+            });
+        }
     }
 }

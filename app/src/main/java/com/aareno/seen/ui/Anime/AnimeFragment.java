@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,12 +13,13 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.aareno.seen.R;
 import com.aareno.seen.data.Anime.AnimeRepository;
@@ -34,13 +36,13 @@ public class AnimeFragment extends Fragment {
     public interface UndoListener {
         void setUndoEnabled(boolean enabled);
     }
+
     private List<Anime> watchingList = new ArrayList<>();
     private List<Anime> watchedList = new ArrayList<>();
-    private ListView listViewWatching;
-    private ListView listViewWatched;
+    private RecyclerView recyclerViewWatching;
+    private RecyclerView recyclerViewWatched;
     private WatchingAnimeAdapter watchingAdapter;
     private WatchedAnimeAdapter watchedAdapter;
-
     private AnimeRepository repository;
     private Stack<UndoAction> undoStack = new Stack<>();
     private UndoListener undoListener;
@@ -49,7 +51,6 @@ public class AnimeFragment extends Fragment {
 
     private List<Anime> originalWatchingList = new ArrayList<>();
     private List<Anime> originalWatchedList = new ArrayList<>();
-
 
     @Override
     public void onAttach(@NonNull Context context) {
@@ -71,41 +72,40 @@ public class AnimeFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_anime, container, false);
 
-        listViewWatching = view.findViewById(R.id.anime_list_view);
-        listViewWatched = view.findViewById(R.id.list_watched_anime);
+        recyclerViewWatching = view.findViewById(R.id.recycler_view_watching);
+        recyclerViewWatched = view.findViewById(R.id.recycler_view_watched);
 
-        // search view
+        recyclerViewWatching.setLayoutManager(new LinearLayoutManager(requireContext()));
+        recyclerViewWatched.setLayoutManager(new LinearLayoutManager(requireContext()));
+
         searchEditText = view.findViewById(R.id.search_edit_text);
         clearSearchButton = view.findViewById(R.id.clear_search);
-        setupSearch();
 
-        setupWatchingAdapter();
-        setupWatchedAdapter();
+        setupSearch();
+        setupAdapters();
         loadAnimeLists();
 
         return view;
     }
 
-    private void setupWatchingAdapter() {
+    private void setupAdapters() {
         watchingAdapter = new WatchingAnimeAdapter(
                 requireContext(),
                 watchingList,
-                this::moveAnimeToWatched,  // Watched button click listener
-                this::updateAnimeEpisodes  // Episode change listener
+                this::moveAnimeToWatched,
+                this::updateAnimeEpisodes
         );
-        listViewWatching.setAdapter(watchingAdapter);
-    }
 
-    private void setupWatchedAdapter() {
         watchedAdapter = new WatchedAnimeAdapter(
                 requireContext(),
                 watchedList,
-                anime -> deleteWatchedAnime(anime)
+                this::deleteWatchedAnime
         );
-        listViewWatched.setAdapter(watchedAdapter);
+
+        recyclerViewWatching.setAdapter(watchingAdapter);
+        recyclerViewWatched.setAdapter(watchedAdapter);
     }
 
-    // Modify your loadAnimeLists() method to store original lists
     private void loadAnimeLists() {
         repository.getWatchingAnime(new AnimeRepository.OnDataLoadedCallback<List<Anime>>() {
             @Override
@@ -146,8 +146,8 @@ public class AnimeFragment extends Fragment {
         repository.updateAnime(anime, new AnimeRepository.OnDataLoadedCallback<Void>() {
             @Override
             public void onDataLoaded(Void data) {
-                // Successfully updated in database
                 Log.d(TAG, "Updated episode count for: " + anime.getTitleRomaji());
+                // No UI update needed if only updating episode count within already listed items
             }
 
             @Override
@@ -323,6 +323,15 @@ public class AnimeFragment extends Fragment {
     }
 
     private void setupSearch() {
+        // Set up EditText click listener to show keyboard
+        searchEditText.setOnClickListener(v -> {
+            searchEditText.requestFocus();
+            InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.showSoftInput(searchEditText, InputMethodManager.SHOW_IMPLICIT);
+            }
+        });
+
         // Add text change listener
         searchEditText.addTextChangedListener(new TextWatcher() {
             @Override
@@ -331,7 +340,6 @@ public class AnimeFragment extends Fragment {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 filterAnimeLists(s.toString());
-                // Show/hide clear button based on text
                 clearSearchButton.setVisibility(s.length() > 0 ? View.VISIBLE : View.GONE);
             }
 
@@ -339,24 +347,61 @@ public class AnimeFragment extends Fragment {
             public void afterTextChanged(Editable s) {}
         });
 
-        // Add keyboard search action listener
+        // Handle search action
         searchEditText.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
+                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER &&
+                            event.getAction() == KeyEvent.ACTION_DOWN)) {
+
                 // Hide keyboard
-                InputMethodManager imm = (InputMethodManager) requireContext()
+                InputMethodManager imm = (InputMethodManager) getContext()
                         .getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                if (imm != null) {
+                    imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                }
+
+                // Process search
+                String query = searchEditText.getText().toString().trim();
+                if (!query.isEmpty()) {
+                    filterAnimeLists(query);
+                }
+
+                v.clearFocus();
                 return true;
             }
             return false;
         });
 
-        // Setup clear button
+        // Set up focus change listener
+        searchEditText.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                InputMethodManager imm = (InputMethodManager) getContext()
+                        .getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+                    imm.showSoftInput(v, InputMethodManager.SHOW_IMPLICIT);
+                }
+            }
+        });
+
+        // Clear search button
         clearSearchButton.setOnClickListener(v -> {
             searchEditText.setText("");
             resetLists();
             clearSearchButton.setVisibility(View.GONE);
+
+            // Hide keyboard when clearing
+            InputMethodManager imm = (InputMethodManager) getContext()
+                    .getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(searchEditText.getWindowToken(), 0);
+            }
+
+            searchEditText.clearFocus();
         });
+
+        // Make sure EditText is focusable
+        searchEditText.setFocusable(true);
+        searchEditText.setFocusableInTouchMode(true);
     }
 
     private void filterAnimeLists(String query) {
@@ -378,7 +423,6 @@ public class AnimeFragment extends Fragment {
             }
         }
 
-        // Update the lists and notify adapters
         watchingList.clear();
         watchingList.addAll(filteredWatchingList);
         watchingAdapter.notifyDataSetChanged();

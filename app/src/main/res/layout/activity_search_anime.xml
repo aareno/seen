@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:padding="16dp">
 
@@ -16,9 +17,17 @@
 
     <EditText
         android:id="@+id/search_edit_text"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:hint="Search Anime"/>
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:imeOptions="actionSearch"
+        android:inputType="text"
+        android:maxLines="1"
+        android:singleLine="true"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:textCursorDrawable="@drawable/cursor_color"
+        android:backgroundTint="?attr/colorOnPrimary"
+        android:textColor="?attr/colorOnPrimary" />
 
     <Button
         android:id="@+id/search_button"
@@ -28,6 +37,6 @@
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/search_recycler_view"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"/>
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 </LinearLayout>

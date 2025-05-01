@@ -1,12 +1,14 @@
 package com.aareno.seen;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.aareno.seen.ui.Anime.Anime;
@@ -40,16 +42,29 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
 
         // Bottom Navigation Setup
         BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
+
+        // Create ColorStateLists for each tab
+        ColorStateList animeColors = createColorStateList(R.color.silver);
+        ColorStateList kdramaColors = createColorStateList(R.color.red);
+        ColorStateList tvMoviesColors = createColorStateList(R.color.black);
+
+        // Set the custom colors for the icons
+        bottomNavigation.setItemIconTintList(null); // Remove default tint
+        bottomNavigation.setItemTextColor(createColorStateList(R.color.gray));
+
         bottomNavigation.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int itemId = item.getItemId();
 
             if (itemId == R.id.nav_anime) {
                 selectedFragment = animeFragment;
+                bottomNavigation.setItemIconTintList(animeColors);
             } else if (itemId == R.id.nav_kdrama) {
                 selectedFragment = new KDramaFragment();
+                bottomNavigation.setItemIconTintList(kdramaColors);
             } else if (itemId == R.id.nav_tv_movies) {
                 selectedFragment = new TvMoviesFragment();
+                bottomNavigation.setItemIconTintList(tvMoviesColors);
             }
 
             if (selectedFragment != null) {
@@ -57,7 +72,6 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                         .replace(R.id.fragment_container, selectedFragment)
                         .commit();
 
-                // Update undo button visibility based on fragment
                 undoButton.setVisibility(selectedFragment instanceof AnimeFragment ?
                         View.VISIBLE : View.GONE);
                 undoButton.setEnabled(selectedFragment instanceof AnimeFragment &&
@@ -69,7 +83,6 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
             return false;
         });
 
-        // Add button click listener
         ImageButton btnAdd = findViewById(R.id.btn_add);
         btnAdd.setOnClickListener(v -> {
             Fragment currentFragment = getSupportFragmentManager()
@@ -85,7 +98,6 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
             }
         });
 
-        // Set default fragment
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, animeFragment)
@@ -94,6 +106,22 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         }
     }
 
+    // Helper method to create ColorStateList
+    private ColorStateList createColorStateList(int colorRes) {
+        int[][] states = new int[][] {
+                new int[] { android.R.attr.state_checked },
+                new int[] { -android.R.attr.state_checked }
+        };
+
+        int[] colors = new int[] {
+                ContextCompat.getColor(this, colorRes),
+                ContextCompat.getColor(this, R.color.gray)
+        };
+
+        return new ColorStateList(states, colors);
+    }
+
+    // Your existing methods remain the same
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
