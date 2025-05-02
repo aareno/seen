@@ -10,7 +10,7 @@ import androidx.room.TypeConverters;
 import com.aareno.seen.data.Anime.DateConverter;
 import com.aareno.seen.ui.KDrama.KDrama;
 
-@Database(entities = {KDrama.class}, version = 1, exportSchema = false)
+@Database(entities = {KDrama.class}, version = 2, exportSchema = false)
 @TypeConverters({DateConverter.class})
 public abstract class KDramaDatabase extends RoomDatabase {
     private static volatile KDramaDatabase INSTANCE;
@@ -20,7 +20,7 @@ public abstract class KDramaDatabase extends RoomDatabase {
             INSTANCE = Room.databaseBuilder(
                     context.getApplicationContext(),
                     KDramaDatabase.class,
-                    "anime_database"
+                    "kdrama_database"
             ).fallbackToDestructiveMigration().build();
         }
         return INSTANCE;

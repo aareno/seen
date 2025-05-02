@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.aareno.seen.data.Anime.AnimeRepository;
+import com.aareno.seen.ui.Anime.Anime;
 import com.aareno.seen.ui.KDrama.KDrama;
 
 import java.util.List;
@@ -55,6 +56,53 @@ public class KDramaRepository {
             });
     }
 
+    public void insertKdrama(KDrama kdrama, KDramaRepository.OnDataLoadedCallback<Long> callback) {
+        executorService.execute(() -> {
+            try {
+                long id = database.kDramaDao().insert(kdrama);
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onDataLoaded(id)
+                );
+            } catch (Exception e) {
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onError(e)
+                );
+            }
+        });
+    }
 
+    public void updateKdrama(KDrama kdrama, KDramaRepository.OnDataLoadedCallback<Void> callback) {
+        executorService.execute(() -> {
+            try {
+                database.kDramaDao().update(kdrama);
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onDataLoaded(null)
+                );
+            } catch (Exception e) {
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onError(e)
+                );
+            }
+        });
+    }
+
+    public void deleteKdrama(KDrama kdrama, KDramaRepository.OnDataLoadedCallback<Void> callback) {
+        executorService.execute(() -> {
+            try {
+                database.kDramaDao().delete(kdrama);
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onDataLoaded(null)
+                );
+            } catch (Exception e) {
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onError(e)
+                );
+            }
+        });
+    }
+
+    public void shutdown() {
+        executorService.shutdown();
+    }
 
 }

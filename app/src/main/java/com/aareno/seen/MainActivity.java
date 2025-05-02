@@ -3,6 +3,7 @@ package com.aareno.seen;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -14,13 +15,18 @@ import androidx.fragment.app.Fragment;
 import com.aareno.seen.ui.Anime.Anime;
 import com.aareno.seen.ui.Anime.AnimeFragment;
 import com.aareno.seen.ui.Anime.SearchAnimeActivity;
+import com.aareno.seen.ui.KDrama.KDrama;
 import com.aareno.seen.ui.KDrama.KDramaFragment;
+import com.aareno.seen.ui.KDrama.SearchKDramaActivity;
 import com.aareno.seen.ui.TvMovies.TvMoviesFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity implements AnimeFragment.UndoListener {
     private static final int SEARCH_ANIME_REQUEST_CODE = 1001;
+    private static final int SEARCH_KDRAMA_REQUEST_CODE = 1002;
+    private static final int SEARCH_TVMOVIES_REQUEST_CODE = 1003;
     private AnimeFragment animeFragment;
+    private KDramaFragment kdramaFragment;
     private ImageButton undoButton;
 
     @Override
@@ -30,12 +36,18 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
 
         // Initialize fragments
         animeFragment = new AnimeFragment();
+        kdramaFragment = new KDramaFragment();
 
         // Initialize undo button
         undoButton = findViewById(R.id.btn_undo);
         undoButton.setOnClickListener(v -> {
-            if (animeFragment != null && animeFragment.isVisible()) {
+            Fragment currentFragment = getSupportFragmentManager()
+                    .findFragmentById(R.id.fragment_container);
+            if (currentFragment instanceof AnimeFragment) {
                 animeFragment.performUndo();
+            } else if (currentFragment instanceof KDramaFragment) {
+                Log.d("MainActivity", "Performing undo on KDramaFragment");
+                kdramaFragment.performUndo();
             }
         });
         undoButton.setEnabled(false);
@@ -60,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                 selectedFragment = animeFragment;
                 bottomNavigation.setItemIconTintList(animeColors);
             } else if (itemId == R.id.nav_kdrama) {
-                selectedFragment = new KDramaFragment();
+                selectedFragment = kdramaFragment;
                 bottomNavigation.setItemIconTintList(kdramaColors);
             } else if (itemId == R.id.nav_tv_movies) {
                 selectedFragment = new TvMoviesFragment();
@@ -72,10 +84,15 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                         .replace(R.id.fragment_container, selectedFragment)
                         .commit();
 
-                undoButton.setVisibility(selectedFragment instanceof AnimeFragment ?
-                        View.VISIBLE : View.GONE);
-                undoButton.setEnabled(selectedFragment instanceof AnimeFragment &&
-                        animeFragment.canUndo());
+                // Show undo button for fragments that support undo
+                boolean supportsUndo = (selectedFragment instanceof AnimeFragment) ||
+                        (selectedFragment instanceof KDramaFragment);
+                undoButton.setVisibility(supportsUndo ? View.VISIBLE : View.GONE);
+
+                if (supportsUndo) {
+                    undoButton.setEnabled(true);
+                    Log.d("MainActivity", "Undo button enabled: true");
+                }
 
                 return true;
             }
@@ -92,7 +109,8 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                 Intent intent = new Intent(MainActivity.this, SearchAnimeActivity.class);
                 startActivityForResult(intent, SEARCH_ANIME_REQUEST_CODE);
             } else if (currentFragment instanceof KDramaFragment) {
-                Toast.makeText(this, "KDrama search not implemented", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(MainActivity.this, SearchKDramaActivity.class);
+                startActivityForResult(intent, SEARCH_KDRAMA_REQUEST_CODE);
             } else if (currentFragment instanceof TvMoviesFragment) {
                 Toast.makeText(this, "TV/Movies search not implemented", Toast.LENGTH_SHORT).show();
             }
@@ -121,23 +139,35 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         return new ColorStateList(states, colors);
     }
 
-    // Your existing methods remain the same
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == SEARCH_ANIME_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
-            Anime selectedAnime = (Anime) data.getSerializableExtra("selected_anime");
-            if (selectedAnime != null) {
-                Fragment currentFragment = getSupportFragmentManager()
-                        .findFragmentById(R.id.fragment_container);
+        if (resultCode == RESULT_OK && data != null) {
+            Fragment currentFragment = getSupportFragmentManager()
+                    .findFragmentById(R.id.fragment_container);
 
-                if (currentFragment instanceof AnimeFragment) {
-                    ((AnimeFragment) currentFragment).addAnimeToWatchingList(selectedAnime);
-                    Toast.makeText(this,
-                            "Added " + selectedAnime.getTitleRomaji() + " to watching list",
-                            Toast.LENGTH_SHORT).show();
-                }
+            switch (requestCode) {
+                case SEARCH_ANIME_REQUEST_CODE:
+                    Anime selectedAnime = (Anime) data.getSerializableExtra("selected_anime");
+                    if (selectedAnime != null && currentFragment instanceof AnimeFragment) {
+                        ((AnimeFragment) currentFragment).addAnimeToWatchingList(selectedAnime);
+                        Toast.makeText(this,
+                                "Added " + selectedAnime.getTitleRomaji() + " to watching list",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+
+                case SEARCH_KDRAMA_REQUEST_CODE:
+                    KDrama selectedKDrama = (KDrama) data.getSerializableExtra("selected_kdrama");
+                    if (selectedKDrama != null && currentFragment instanceof KDramaFragment) {
+                        ((KDramaFragment) currentFragment).addKDramaToWatchingList(selectedKDrama);
+                        Toast.makeText(this,
+                                "Added " + selectedKDrama.getTitleEnglish() + " to watching list",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                    break;
             }
         }
     }

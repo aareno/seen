@@ -1,27 +1,23 @@
-package com.aareno.seen.ui;
+package com.aareno.seen.ui.KDrama;
 
-import com.aareno.seen.ui.Anime.Anime;
-
-public class UndoAction {
+public class UndoAction_kdrama {
     public enum ActionType {
         ADD_TO_WATCHING,
-        ADD_TO_WATCHED,
-        REMOVE_FROM_WATCHING,
         REMOVE_FROM_WATCHED,
         MOVE_TO_WATCHED
     }
 
     private ActionType type;
-    private Anime anime;
+    private KDrama kdrama;
     private int position;
 
-    public UndoAction(ActionType type, Anime anime, int position) {
+    public UndoAction_kdrama(ActionType type, KDrama kdrama, int position) {
         this.type = type;
-        this.anime = anime;
+        this.kdrama = kdrama;
         this.position = position;
     }
 
     public ActionType getType() { return type; }
-    public Anime getAnime() { return anime; }
+    public KDrama getKdrama() { return kdrama; }
     public int getPosition() { return position; }
 }

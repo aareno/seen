@@ -7,10 +7,11 @@ import androidx.room.TypeConverters;
 import com.aareno.seen.data.Anime.DateConverter;
 import com.aareno.seen.ui.Anime.Anime;
 
+import java.io.Serializable;
 import java.util.Date;
 @Entity(tableName = "kdrama")
 @TypeConverters(DateConverter.class)
-public class KDrama {
+public class KDrama implements Serializable {
 
     @PrimaryKey
     private int id;

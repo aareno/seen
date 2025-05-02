@@ -23,7 +23,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.aareno.seen.R;
 import com.aareno.seen.data.Anime.AnimeRepository;
-import com.aareno.seen.ui.UndoAction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +43,7 @@ public class AnimeFragment extends Fragment {
     private WatchingAnimeAdapter watchingAdapter;
     private WatchedAnimeAdapter watchedAdapter;
     private AnimeRepository repository;
-    private Stack<UndoAction> undoStack = new Stack<>();
+    private Stack<UndoAction_anime> undoStack = new Stack<>();
     private UndoListener undoListener;
     private EditText searchEditText;
     private ImageButton clearSearchButton;
@@ -158,7 +157,7 @@ public class AnimeFragment extends Fragment {
         });
     }
 
-    private void addToUndoStack(UndoAction action) {
+    private void addToUndoStack(UndoAction_anime action) {
         undoStack.push(action);
         if (undoListener != null) {
             undoListener.setUndoEnabled(true);
@@ -167,7 +166,7 @@ public class AnimeFragment extends Fragment {
 
     public void performUndo() {
         if (!undoStack.isEmpty()) {
-            UndoAction action = undoStack.pop();
+            UndoAction_anime action = undoStack.pop();
 
             switch (action.getType()) {
                 case ADD_TO_WATCHING:
@@ -193,8 +192,8 @@ public class AnimeFragment extends Fragment {
             public void onDataLoaded(Long id) {
                 watchingList.add(anime);
                 watchingAdapter.notifyDataSetChanged();
-                addToUndoStack(new UndoAction(
-                        UndoAction.ActionType.ADD_TO_WATCHING,
+                addToUndoStack(new UndoAction_anime(
+                        UndoAction_anime.ActionType.ADD_TO_WATCHING,
                         anime,
                         watchingList.size() - 1
                 ));
@@ -233,8 +232,8 @@ public class AnimeFragment extends Fragment {
             public void onDataLoaded(Void data) {
                 watchingAdapter.notifyDataSetChanged();
                 watchedAdapter.notifyDataSetChanged();
-                addToUndoStack(new UndoAction(
-                        UndoAction.ActionType.MOVE_TO_WATCHED,
+                addToUndoStack(new UndoAction_anime(
+                        UndoAction_anime.ActionType.MOVE_TO_WATCHED,
                         anime,
                         originalPosition
                 ));
@@ -275,8 +274,8 @@ public class AnimeFragment extends Fragment {
             @Override
             public void onDataLoaded(Void data) {
                 watchedAdapter.notifyDataSetChanged();
-                addToUndoStack(new UndoAction(
-                        UndoAction.ActionType.REMOVE_FROM_WATCHED,
+                addToUndoStack(new UndoAction_anime(
+                        UndoAction_anime.ActionType.REMOVE_FROM_WATCHED,
                         anime,
                         position
                 ));

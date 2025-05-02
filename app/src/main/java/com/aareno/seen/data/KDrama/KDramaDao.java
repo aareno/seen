@@ -24,9 +24,9 @@ public interface KDramaDao {
     List<KDrama> getWatchedKdrama();
 
     @Update
-    void update(KDrama anime);
+    void update(KDrama kdrama);
 
     @Delete
-    void delete(KDrama anime);
+    void delete(KDrama kdrama);
 
 }
