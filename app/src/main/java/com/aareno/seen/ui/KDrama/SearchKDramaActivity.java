@@ -185,23 +185,64 @@ public class SearchKDramaActivity extends AppCompatActivity {
                         // Filter for Korean shows
                         if (show.has("language") && "Korean".equals(show.getString("language"))) {
                             int id = show.getInt("id");
-                            String title = show.getString("name");
-
-                            String imageUrl = null;
-                            if (show.has("image") && !show.isNull("image")) {
-                                JSONObject imageObj = show.getJSONObject("image");
-                                imageUrl = imageObj.optString("medium", null);
-                            }
-
-                            KDrama kdrama = new KDrama(id, title, title, imageUrl);
-                            // Check if this drama is already selected
-                            boolean isSelected = selectedKDramaList.stream()
-                                    .anyMatch(d -> d.getId() == id);
-                            kdrama.setWatching(isSelected);
-                            kdramas.add(kdrama);
+                            // Make another API call to get episode count
+                            fetchEpisodeCount(id, show, kdramas);
                         }
                     }
 
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    mainHandler.post(() -> {
+                        Toast.makeText(SearchKDramaActivity.this,
+                                "Error parsing search results",
+                                Toast.LENGTH_SHORT).show();
+                    });
+                }
+            }
+        });
+    }
+
+    private void fetchEpisodeCount(int showId, JSONObject show, List<KDrama> kdramas) {
+        String episodeUrl = "https://api.tvmaze.com/shows/" + showId + "/episodes";
+
+        Request episodeRequest = new Request.Builder()
+                .url(episodeUrl)
+                .get()
+                .build();
+
+        new OkHttpClient().newCall(episodeRequest).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                try {
+                    String responseBody = response.body().string();
+                    JSONArray episodes = new JSONArray(responseBody);
+                    int episodeCount = episodes.length();
+
+                    // Create KDrama object with episode count
+                    String title = show.getString("name");
+                    String imageUrl = null;
+                    if (show.has("image") && !show.isNull("image")) {
+                        JSONObject imageObj = show.getJSONObject("image");
+                        imageUrl = imageObj.optString("medium", null);
+                    }
+
+                    KDrama kdrama = new KDrama(showId, title, title, imageUrl);
+                    Log.d(TAG, "Episode count for " + title + ": " + episodeCount);
+                    kdrama.setEpisodeCount(episodeCount); // Add this method to your KDrama class
+
+                    // Check if this drama is already selected
+                    boolean isSelected = selectedKDramaList.stream()
+                            .anyMatch(d -> d.getId() == showId);
+                    kdrama.setWatching(isSelected);
+
+                    kdramas.add(kdrama);
+
+                    // Update UI after getting episode count
                     mainHandler.post(() -> {
                         kDramaList.clear();
                         kDramaList.addAll(kdramas);
@@ -216,11 +257,6 @@ public class SearchKDramaActivity extends AppCompatActivity {
 
                 } catch (JSONException e) {
                     e.printStackTrace();
-                    mainHandler.post(() -> {
-                        Toast.makeText(SearchKDramaActivity.this,
-                                "Error parsing search results",
-                                Toast.LENGTH_SHORT).show();
-                    });
                 }
             }
         });

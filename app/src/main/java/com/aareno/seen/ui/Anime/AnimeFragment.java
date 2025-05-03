@@ -234,6 +234,8 @@ public class AnimeFragment extends Fragment {
     }
 
     private void moveAnimeToWatched(Anime anime) {
+
+
         int originalPosition = watchingList.indexOf(anime);
         watchingList.remove(anime);
         originalWatchingList.remove(anime);

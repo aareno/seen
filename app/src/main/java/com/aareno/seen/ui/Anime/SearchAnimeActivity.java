@@ -124,7 +124,7 @@ public class SearchAnimeActivity extends AppCompatActivity {
     private void searchAnime(String query) {
         OkHttpClient client = new OkHttpClient();
 
-        // Prepare GraphQL query
+        // Updated GraphQL query to include episodes
         RequestBody requestBody = new FormBody.Builder()
                 .add("query", "query ($search: String) { " +
                         "Page(page: 1, perPage: 10) { " +
@@ -137,6 +137,7 @@ public class SearchAnimeActivity extends AppCompatActivity {
                         "    coverImage { " +
                         "      large " +
                         "    } " +
+                        "    episodes " +  // Added episodes field
                         "  } " +
                         "} " +
                         "}")
@@ -178,11 +179,15 @@ public class SearchAnimeActivity extends AppCompatActivity {
                         JSONObject title = media.getJSONObject("title");
                         JSONObject coverImage = media.getJSONObject("coverImage");
 
+                        // Get episodes count (handle null case)
+                        int episodes = media.isNull("episodes") ? 0 : media.getInt("episodes");
+
                         Anime anime = new Anime(
                                 media.getInt("id"),
                                 title.getString("romaji"),
                                 title.optString("english", ""),
-                                coverImage.getString("large")
+                                coverImage.getString("large"),
+                                episodes  // Add episodes to constructor
                         );
                         searchResults.add(anime);
                     }

@@ -1,11 +1,13 @@
 package com.aareno.seen.ui.KDrama;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -65,6 +67,8 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
         Button incrementButton;
         Button decrementButton;
         Button watchedButton;
+        ProgressBar progressBar;
+        TextView progressText;
 
         ViewHolder(View itemView) {
             super(itemView);
@@ -73,7 +77,8 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
             episodesTextView = itemView.findViewById(R.id.tv_episode_count);
             incrementButton = itemView.findViewById(R.id.btn_plus);
             decrementButton = itemView.findViewById(R.id.btn_minus);
-            watchedButton = itemView.findViewById(R.id.btn_watched);
+            progressBar = itemView.findViewById(R.id.progress_bar);
+            progressText = itemView.findViewById(R.id.tv_progress_text);
         }
 
         void bind(KDrama currentKDrama) {
@@ -83,18 +88,36 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
             // Set episode count
             episodesTextView.setText("Episode: " + currentKDrama.getWatchedEpisodes());
 
+            // Check episode count here to maintain button state
+            if (currentKDrama.getWatchedEpisodes() == currentKDrama.getEpisodeCount()) {
+                incrementButton.setBackgroundTintList(ColorStateList.valueOf(context.getColor(R.color.green)));
+                incrementButton.setText("✔ ");
+            } else {
+                incrementButton.setBackgroundTintList(ColorStateList.valueOf(context.getColor(R.color.blue)));
+                incrementButton.setText("+");
+            }
+
             // Load cover image
             if (!currentKDrama.getCoverImageUrl().isEmpty()) {
                 Glide.with(context)
                         .load(currentKDrama.getCoverImageUrl())
                         .into(coverImageView);
             }
-            // Increment episode count
+
+            // Click listener remains the same
             incrementButton.setOnClickListener(v -> {
-                int currentEpisodes = currentKDrama.getWatchedEpisodes();
-                currentKDrama.setWatchedEpisodes(currentEpisodes + 1);
-                notifyItemChanged(getAdapterPosition());
-                episodeChangeListener.onEpisodeChanged(currentKDrama);
+                if (currentKDrama.getWatchedEpisodes() < currentKDrama.getEpisodeCount()) {
+                    if (currentKDrama.getWatchedEpisodes() == currentKDrama.getEpisodeCount() - 1) {
+                        incrementButton.setBackgroundTintList(ColorStateList.valueOf(context.getColor(R.color.green)));
+                        incrementButton.setText("✔ ");
+                    }
+
+                    currentKDrama.incrementEpisodes();
+                    episodeChangeListener.onEpisodeChanged(currentKDrama);
+                    notifyItemChanged(getAdapterPosition());
+                } else {
+                    watchedButtonClickListener.onWatchedButtonClick(currentKDrama);
+                }
             });
 
             // Decrement episode count
@@ -107,12 +130,10 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
                 }
             });
 
-            // Mark as watched
-            watchedButton.setOnClickListener(v -> {
-                if (watchedButtonClickListener != null) {
-                    watchedButtonClickListener.onWatchedButtonClick(currentKDrama);
-                }
-            });
+            progressBar.setMax(currentKDrama.getEpisodeCount());
+            progressBar.setProgress(currentKDrama.getWatchedEpisodes());
+            progressText.setText(currentKDrama.getWatchedEpisodes() + "/" + currentKDrama.getEpisodeCount());
+
         }
     }
 }

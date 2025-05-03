@@ -9,7 +9,7 @@ import androidx.room.TypeConverters;
 
 import com.aareno.seen.ui.Anime.Anime;
 
-@Database(entities = {Anime.class}, version = 1, exportSchema = false)
+@Database(entities = {Anime.class}, version = 2, exportSchema = false)
 @TypeConverters({DateConverter.class})
 public abstract class AnimeDatabase extends RoomDatabase {
     private static volatile AnimeDatabase INSTANCE;

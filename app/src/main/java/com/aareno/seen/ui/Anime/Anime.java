@@ -20,17 +20,19 @@ public class Anime implements Serializable {
     private String coverImageUrl;
     private int watchedEpisodes;
     private boolean isWatching; // New field to distinguish between watching and watched lists
+    private int episodeCount;
 
     // Default constructor for Room
     public Anime() {}
 
-    public Anime(int id, String titleRomaji, String titleEnglish, String coverImageUrl) {
+    public Anime(int id, String titleRomaji, String titleEnglish, String coverImageUrl, int episodeCount) {
         this.id = id;
         this.titleRomaji = titleRomaji != null ? titleRomaji : "";
         this.titleEnglish = titleEnglish != null ? titleEnglish : "";
         this.coverImageUrl = coverImageUrl != null ? coverImageUrl : "";
         this.watchedEpisodes = 0;
         this.isWatching = true; // Default to watching when created
+        this.episodeCount = episodeCount;
     }
 
     // Getters and Setters with null checks
@@ -105,6 +107,14 @@ public class Anime implements Serializable {
         isWatching = watching;
     }
 
+    public void setEpisodeCount(int episodeCount) {
+        this.episodeCount = episodeCount;
+    }
+
+    public int getEpisodeCount() {
+        return episodeCount;
+    }
+
     // Equals and HashCode for proper comparison
     @Override
     public boolean equals(Object o) {
@@ -117,16 +127,5 @@ public class Anime implements Serializable {
     @Override
     public int hashCode() {
         return Integer.hashCode(id);
-    }
-
-    // Optional: ToString for debugging
-    @Override
-    public String toString() {
-        return "Anime{" +
-                "id=" + id +
-                ", titleRomaji='" + titleRomaji + '\'' +
-                ", watchedEpisodes=" + watchedEpisodes +
-                ", isWatching=" + isWatching +
-                '}';
     }
 }

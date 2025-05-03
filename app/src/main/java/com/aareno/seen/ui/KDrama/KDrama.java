@@ -21,6 +21,7 @@ public class KDrama implements Serializable {
     private String coverImageUrl;
     private int watchedEpisodes;
     private boolean isWatching;
+    private int episodeCount;
 
     public KDrama() {}
 
@@ -71,6 +72,13 @@ public class KDrama implements Serializable {
     public void setWatching(boolean watching) {
         isWatching = watching;
     }
+    public void setEpisodeCount(int episodeCount) {
+        this.episodeCount = episodeCount;
+    }
+
+    public int getEpisodeCount() {
+        return episodeCount;
+}
 
     // Equals and HashCode for proper comparison
     @Override
