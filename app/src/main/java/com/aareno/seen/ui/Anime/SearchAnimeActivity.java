@@ -3,16 +3,21 @@ package com.aareno.seen.ui.Anime;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -36,13 +41,21 @@ import okhttp3.Response;
 
 public class SearchAnimeActivity extends AppCompatActivity {
     private static final String TAG = "SearchAnimeActivity";
+
+    // Searching
     private EditText searchEditText;
     private Button searchButton;
     private RecyclerView recyclerView;
     private AnimeSearchAdapter animeAdapter;
     private List<Anime> animeList;
-
     private List<Anime> selectedAnimeList = new ArrayList<>();
+
+    // Popular
+    private RecyclerView popularRecyclerView;
+    private AnimeSearchAdapter popularAnimeAdapter;
+    private List<Anime> popularAnimeList;
+    private TextView searchResultsTitle;
+    private TextView popularTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,11 +68,25 @@ public class SearchAnimeActivity extends AppCompatActivity {
         searchButton = findViewById(R.id.search_button);
         recyclerView = findViewById(R.id.search_recycler_view);
 
+        // Initialize popular anime views and list
+        popularRecyclerView = findViewById(R.id.popular_recycler_view);
+        popularAnimeList = new ArrayList<>();
+        searchResultsTitle = findViewById(R.id.search_results_title);
+        popularTitle = findViewById(R.id.popular_title);
+
         ImageButton backButton = findViewById(R.id.back_button);
         backButton.setOnClickListener(v -> finish());
 
         // Initialize anime list
         animeList = new ArrayList<>();
+
+        // Setup popular anime RecyclerView
+        popularAnimeAdapter = new AnimeSearchAdapter(popularAnimeList, new AnimeSearchAdapter.OnItemClickListener() {
+            @Override
+            public void onAddToWatchingClick(Anime anime) {
+                // Same implementation as your existing onAddToWatchingClick
+            }
+        });
 
         // Setup RecyclerView
         animeAdapter = new AnimeSearchAdapter(animeList, new AnimeSearchAdapter.OnItemClickListener() {
@@ -95,6 +122,24 @@ public class SearchAnimeActivity extends AppCompatActivity {
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(animeAdapter);
+
+        popularRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        popularRecyclerView.setAdapter(popularAnimeAdapter);
+
+        loadPopularAnime();
+        // Modify search related listeners to handle visibility
+        searchEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                updateVisibility(!s.toString().isEmpty());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
 
         // Search button click listener
         searchButton.setOnClickListener(v -> {
@@ -209,4 +254,96 @@ public class SearchAnimeActivity extends AppCompatActivity {
             }
         });
     }
+    private void updateVisibility(boolean isSearching) {
+        popularTitle.setVisibility(isSearching ? View.GONE : View.VISIBLE);
+        popularRecyclerView.setVisibility(isSearching ? View.GONE : View.VISIBLE);
+        searchResultsTitle.setVisibility(isSearching ? View.VISIBLE : View.GONE);
+        recyclerView.setVisibility(isSearching ? View.VISIBLE : View.GONE);
+    }
+
+    private void loadPopularAnime() {
+        OkHttpClient client = new OkHttpClient();
+
+        // GraphQL query for popular anime
+        RequestBody requestBody = new FormBody.Builder()
+                .add("query", "query { " +
+                        "Page(page: 1, perPage: 10) { " +
+                        "  media(sort: POPULARITY_DESC, type: ANIME) { " +  // Sort by popularity
+                        "    id " +
+                        "    title { " +
+                        "      romaji " +
+                        "      english " +
+                        "    } " +
+                        "    coverImage { " +
+                        "      large " +
+                        "    } " +
+                        "    episodes " +
+                        "  } " +
+                        "} " +
+                        "}")
+                .build();
+
+        Request request = new Request.Builder()
+                .url("https://graphql.anilist.co")
+                .post(requestBody)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                runOnUiThread(() -> {
+                    Toast.makeText(SearchAnimeActivity.this,
+                            "Failed to load popular anime: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                try {
+                    String responseBody = response.body().string();
+                    JSONObject jsonObject = new JSONObject(responseBody);
+                    JSONArray mediaList = jsonObject
+                            .getJSONObject("data")
+                            .getJSONObject("Page")
+                            .getJSONArray("media");
+
+                    final List<Anime> popularResults = new ArrayList<>();
+                    for (int i = 0; i < mediaList.length(); i++) {
+                        JSONObject media = mediaList.getJSONObject(i);
+                        JSONObject title = media.getJSONObject("title");
+                        JSONObject coverImage = media.getJSONObject("coverImage");
+
+                        int episodes = media.isNull("episodes") ? 0 : media.getInt("episodes");
+
+                        Anime anime = new Anime(
+                                media.getInt("id"),
+                                title.getString("romaji"),
+                                title.optString("english", ""),
+                                coverImage.getString("large"),
+                                episodes
+                        );
+                        popularResults.add(anime);
+                    }
+
+                    runOnUiThread(() -> {
+                        popularAnimeList.clear();
+                        popularAnimeList.addAll(popularResults);
+                        popularAnimeAdapter.notifyDataSetChanged();
+                    });
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    runOnUiThread(() -> {
+                        Toast.makeText(SearchAnimeActivity.this,
+                                "Error parsing popular anime results",
+                                Toast.LENGTH_SHORT).show();
+                    });
+                }
+            }
+        });
+    }
+
 }

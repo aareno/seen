@@ -9,96 +9,123 @@
     app:cardBackgroundColor="?attr/colorPrimary"
     app:cardUseCompatPadding="false">
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="wrap_content">
+
+        <ImageButton
+            android:id="@+id/btn_delete"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentTop="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="12dp"
+            android:src="@drawable/trash"
+            android:scaleType="centerCrop"
+            android:contentDescription="Delete"
+            app:tint="@color/red" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="16dp">
-
-            <ImageView
-                android:id="@+id/anime_cover"
-                android:layout_width="80dp"
-                android:layout_height="120dp"
-                android:scaleType="centerCrop"/>
+            android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginStart="16dp">
+                android:orientation="horizontal"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="8dp">
 
-                <TextView
-                    android:id="@+id/anime_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textSize="16sp"
-                    android:text="Anime Title"/>
+                <ImageView
+                    android:id="@+id/anime_cover"
+                    android:layout_width="80dp"
+                    android:layout_height="120dp"
+                    android:scaleType="centerCrop"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <Button
-                        android:id="@+id/btn_minus"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:text="-"
-                        android:backgroundTint="#B0BEC5"
-                        android:textColor="?attr/colorPrimary"
-                        android:textSize="16sp"/>
+                    android:orientation="vertical"
+                    android:layout_marginStart="16dp">
 
                     <TextView
-                        android:id="@+id/tv_episode_count"
-                        android:layout_width="wrap_content"
+                        android:id="@+id/anime_title"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginHorizontal="8dp"
-                        android:text="0"
-                        android:textSize="16sp"/>
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="48dp"
+                        android:paddingTop="10dp"
+                        android:text="Anime Title"/>
 
-                    <Button
-                        android:id="@+id/btn_plus"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:text="+"
-                        android:backgroundTint="#2196F3"
-                        android:textColor="?attr/colorPrimary"
-                        android:textSize="16sp"/>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingTop="20dp">
+
+                        <Button
+                            android:id="@+id/btn_minus"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:text="-"
+                            android:backgroundTint="#B0BEC5"
+                            android:textColor="?attr/colorPrimary"
+                            android:textSize="20sp"/>
+
+                        <TextView
+                            android:id="@+id/tv_episode_count"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="16dp"
+                            android:text="0"
+                            android:textSize="17sp"/>
+
+                        <Button
+                            android:id="@+id/btn_plus"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:text="+"
+                            android:backgroundTint="#2196F3"
+                            android:textColor="?attr/colorPrimary"
+                            android:textSize="20sp"/>
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
-        </LinearLayout>
 
-        <!-- Progress section -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="8dp"
-            android:gravity="center_vertical">
-
-            <ProgressBar
-                android:id="@+id/progress_bar"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="0dp"
-                android:layout_weight="1"
+            <!-- Progress section -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:progress="0"
-                android:progressTint="#4CAF50"/>
+                android:orientation="horizontal"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:paddingBottom="8dp"
+                android:gravity="center_vertical">
 
-            <TextView
-                android:id="@+id/tv_progress_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="0/0"
-                android:textSize="14sp"/>
+                <ProgressBar
+                    android:id="@+id/progress_bar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:progress="0"
+                    android:progressTint="#4CAF50"/>
+
+                <TextView
+                    android:id="@+id/tv_progress_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="0/0"
+                    android:textSize="14sp"/>
+            </LinearLayout>
+
         </LinearLayout>
-
-    </LinearLayout>
+    </RelativeLayout>
 </androidx.cardview.widget.CardView>

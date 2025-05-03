@@ -9,47 +9,57 @@
     app:cardBackgroundColor="?attr/colorPrimary"
     app:cardUseCompatPadding="false">
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp">
+        android:layout_height="wrap_content">
 
-        <ImageView
-            android:id="@+id/anime_cover"
-            android:layout_width="80dp"
-            android:layout_height="120dp"
-            android:scaleType="centerCrop" />
+        <ImageButton
+            android:id="@+id/btn_delete"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentTop="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="12dp"
+            android:src="@drawable/trash"
+            android:scaleType="centerCrop"
+            android:contentDescription="Delete"
+            app:tint="@color/red" />
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="16dp">
+            android:orientation="horizontal"
+            android:padding="16dp">
 
-            <TextView
-                android:id="@+id/anime_title"
-                android:layout_width="wrap_content"
+            <ImageView
+                android:id="@+id/anime_cover"
+                android:layout_width="80dp"
+                android:layout_height="120dp"
+                android:scaleType="centerCrop" />
+
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="16dp">
 
-            <TextView
-                android:id="@+id/finished_date"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp" />
+                <TextView
+                    android:id="@+id/anime_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginEnd="48dp" />
 
-            <Button
-                android:id="@+id/btn_delete"
-                android:layout_width="100dp"
-                android:layout_height="40dp"
-                android:text="Delete"
-                android:backgroundTint="@color/red"
-                android:textColor="?attr/colorPrimary"
-                android:textSize="10sp" />
+                <TextView
+                    android:id="@+id/finished_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:layout_marginTop="10dp" />
+            </LinearLayout>
         </LinearLayout>
-    </LinearLayout>
-
+    </RelativeLayout>
 </androidx.cardview.widget.CardView>

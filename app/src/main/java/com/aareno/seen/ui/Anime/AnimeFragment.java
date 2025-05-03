@@ -96,7 +96,8 @@ public class AnimeFragment extends Fragment {
                 requireContext(),
                 watchingList,
                 this::moveAnimeToWatched,
-                this::updateAnimeEpisodes
+                this::updateAnimeEpisodes,
+                this::deleteWatchingAnime
         );
 
         watchedAdapter = new WatchedAnimeAdapter(
@@ -183,6 +184,9 @@ public class AnimeFragment extends Fragment {
                     break;
                 case MOVE_TO_WATCHED:
                     undoMoveToWatched(action.getAnime(), action.getPosition());
+                    break;
+                case REMOVE_FROM_WATCHING:
+                    undoRemoveFromWatching(action.getAnime(), action.getPosition());
                     break;
             }
 
@@ -286,6 +290,29 @@ public class AnimeFragment extends Fragment {
         });
     }
 
+    private void deleteWatchingAnime(Anime anime) {
+        int position = watchingList.indexOf(anime);
+        watchingList.remove(anime);
+        updateCounts();
+        repository.deleteAnime(anime, new AnimeRepository.OnDataLoadedCallback<Void>() {
+            @Override
+            public void onDataLoaded(Void data) {
+                watchingAdapter.notifyDataSetChanged();
+                addToUndoStack(new UndoAction_anime(
+                        UndoAction_anime.ActionType.REMOVE_FROM_WATCHING,
+                        anime,
+                        position
+                ));
+            }
+
+            @Override
+            public void onError(Exception e) {
+                showErrorMessage("Failed to delete anime");
+            }
+        });
+    }
+
+
     private void deleteWatchedAnime(Anime anime) {
         int position = watchedList.indexOf(anime);
         watchedList.remove(anime);
@@ -308,6 +335,23 @@ public class AnimeFragment extends Fragment {
         });
     }
 
+    private void undoRemoveFromWatching(Anime anime, int position) {
+        repository.insertAnime(anime, new AnimeRepository.OnDataLoadedCallback<Long>() {
+            @Override
+            public void onDataLoaded(Long id) {
+                watchingList.add(position, anime);
+                updateCounts();
+                watchingAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                showErrorMessage("Failed to undo delete");
+            }
+        });
+
+    }
+
     private void undoRemoveFromWatched(Anime anime, int position) {
         repository.insertAnime(anime, new AnimeRepository.OnDataLoadedCallback<Long>() {
             @Override
@@ -322,6 +366,7 @@ public class AnimeFragment extends Fragment {
                 showErrorMessage("Failed to undo delete");
             }
         });
+
     }
 
     private void showErrorMessage(String message) {

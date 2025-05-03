@@ -16,6 +16,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aareno.seen.R;
+import com.aareno.seen.ui.KDrama.KDrama;
+import com.aareno.seen.ui.KDrama.WatchingKDramaAdapter;
 import com.bumptech.glide.Glide;
 
 import java.util.List;
@@ -26,6 +28,7 @@ public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdap
     private List<Anime> animeList;
     private OnWatchedButtonClickListener watchedButtonClickListener;
     private OnEpisodeChangeListener episodeChangeListener;
+    private OnDeleteClickListener deleteClickListener;
 
     public interface OnWatchedButtonClickListener {
         void onWatchedButtonClick(Anime anime);
@@ -34,11 +37,15 @@ public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdap
     public interface OnEpisodeChangeListener {
         void onEpisodeChanged(Anime anime);
     }
-    public WatchingAnimeAdapter(Context context, List<Anime> animeList, OnWatchedButtonClickListener listener, OnEpisodeChangeListener episodeChangeListener) {
+    public interface OnDeleteClickListener {
+        void onDeleteClick(Anime anime);
+    }
+    public WatchingAnimeAdapter(Context context, List<Anime> animeList, OnWatchedButtonClickListener listener, OnEpisodeChangeListener episodeChangeListener, OnDeleteClickListener deleteClickListener) {
         this.context = context;
         this.animeList = animeList;
         this.watchedButtonClickListener = listener;
         this.episodeChangeListener = episodeChangeListener;
+        this.deleteClickListener = deleteClickListener;
     }
 
     @NonNull
@@ -67,6 +74,7 @@ public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdap
         Button decrementButton;
         ProgressBar progressBar;
         TextView progressText;
+        ImageButton deleteButton;
 
         ViewHolder(View itemView) {
             super(itemView);
@@ -77,6 +85,7 @@ public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdap
             decrementButton = itemView.findViewById(R.id.btn_minus);
             progressBar = itemView.findViewById(R.id.progress_bar);
             progressText = itemView.findViewById(R.id.tv_progress_text);
+            deleteButton = itemView.findViewById(R.id.btn_delete);
         }
 
         void bind(Anime currentAnime) {
@@ -113,6 +122,13 @@ public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdap
                 currentAnime.decrementEpisodes();
                 notifyItemChanged(getAdapterPosition());
                 episodeChangeListener.onEpisodeChanged(currentAnime);
+            });
+
+            // delete button
+            deleteButton.setOnClickListener(v -> {
+                if (deleteClickListener != null) {
+                    deleteClickListener.onDeleteClick(currentAnime);
+                }
             });
 
             progressBar.setMax(currentAnime.getEpisodeCount());

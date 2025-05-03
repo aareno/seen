@@ -97,7 +97,8 @@ public class KDramaFragment extends Fragment {
                 requireContext(),
                 watchingList,
                 this::moveKDramaToWatched,
-                this::updateKDramaEpisodes
+                this::updateKDramaEpisodes,
+                this::deleteWatchingKDrama
         );
 
         watchedAdapter = new WatchedKDramaAdapter(
@@ -296,6 +297,29 @@ public class KDramaFragment extends Fragment {
 
     }
 
+    private void deleteWatchingKDrama(KDrama kdrama) {
+        int position = watchingList.indexOf(kdrama);
+        watchingList.remove(kdrama);
+
+        repository.deleteKdrama(kdrama, new KDramaRepository.OnDataLoadedCallback<Void>() {
+            @Override
+            public void onDataLoaded(Void data) {
+                watchingAdapter.notifyDataSetChanged();
+                addToUndoStack(new UndoAction_kdrama(
+                        UndoAction_kdrama.ActionType.REMOVE_FROM_WATCHING,
+                        kdrama,
+                        position
+                ));
+            }
+
+            @Override
+            public void onError(Exception e) {
+                showErrorMessage("Failed to delete anime");
+            }
+        });
+        updateCounts();
+    }
+
     private void deleteWatchedKDrama(KDrama kdrama) {
         int position = watchedList.indexOf(kdrama);
         watchedList.remove(kdrama);
@@ -342,6 +366,9 @@ public class KDramaFragment extends Fragment {
                 case MOVE_TO_WATCHED:
                     undoMoveToWatched(action.getKdrama(), action.getPosition());
                     break;
+                case REMOVE_FROM_WATCHING:
+                    undoRemoveFromWatching(action.getKdrama(), action.getPosition());
+                    break;
             }
 
             if (undoListener != null) {
@@ -370,6 +397,7 @@ public class KDramaFragment extends Fragment {
         watchingList.add(originalPosition, kdrama);
         originalWatchingList.add(originalPosition, kdrama);
 
+
         repository.updateKdrama(kdrama, new KDramaRepository.OnDataLoadedCallback<Void>() {
             @Override
             public void onDataLoaded(Void data) {
@@ -385,11 +413,29 @@ public class KDramaFragment extends Fragment {
         updateCounts();
     }
 
+    private void undoRemoveFromWatching(KDrama kdrama, int position) {
+        repository.insertKdrama(kdrama, new KDramaRepository.OnDataLoadedCallback<Long>() {
+            @Override
+            public void onDataLoaded(Long id) {
+                watchingList.add(position, kdrama);
+                updateCounts();
+                watchingAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                showErrorMessage("Failed to undo delete");
+            }
+        });
+        updateCounts();
+    }
+
     private void undoRemoveFromWatched(KDrama kdrama, int position) {
         repository.insertKdrama(kdrama, new KDramaRepository.OnDataLoadedCallback<Long>() {
             @Override
             public void onDataLoaded(Long id) {
                 watchedList.add(position, kdrama);
+                updateCounts();
                 watchedAdapter.notifyDataSetChanged();
             }
 

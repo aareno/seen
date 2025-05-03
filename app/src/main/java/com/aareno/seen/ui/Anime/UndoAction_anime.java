@@ -4,7 +4,8 @@ public class UndoAction_anime {
     public enum ActionType {
         ADD_TO_WATCHING,
         REMOVE_FROM_WATCHED,
-        MOVE_TO_WATCHED
+        MOVE_TO_WATCHED,
+        REMOVE_FROM_WATCHING
     }
 
     private ActionType type;

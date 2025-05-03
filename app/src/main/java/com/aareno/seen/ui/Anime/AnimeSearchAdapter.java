@@ -73,7 +73,11 @@ public class AnimeSearchAdapter extends RecyclerView.Adapter<AnimeSearchAdapter.
 
         public void bind(Anime anime) {
             currentAnime = anime;
-            titleTextView.setText(anime.getTitleRomaji());
+            titleTextView.setText(
+                    (anime.getTitleEnglish() != null && !anime.getTitleEnglish().trim().isEmpty() && !anime.getTitleEnglish().equals("null")) ?
+                            anime.getTitleEnglish() :
+                            (anime.getTitleRomaji() != null && !anime.getTitleRomaji().equals("null") ? anime.getTitleRomaji() : "No Title Available")
+            );
 
             // Load image with Glide
             Glide.with(itemView.getContext())

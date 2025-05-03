@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -58,7 +59,7 @@ public class WatchedKDramaAdapter extends RecyclerView.Adapter<WatchedKDramaAdap
         ImageView coverImageView;
         TextView titleTextView;
         TextView finishedDateTextView;
-        Button deleteButton;
+        ImageButton deleteButton;
 
         ViewHolder(View itemView) {
             super(itemView);

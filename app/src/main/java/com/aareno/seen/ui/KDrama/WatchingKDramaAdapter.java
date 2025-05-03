@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -24,6 +25,7 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
     private List<KDrama> kDramaList;
     private OnWatchedButtonClickListener watchedButtonClickListener;
     private OnEpisodeChangeListener episodeChangeListener;
+    private OnDeleteClickListener deleteClickListener;
 
     public interface OnWatchedButtonClickListener {
         void onWatchedButtonClick(KDrama kdrama);
@@ -33,13 +35,18 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
         void onEpisodeChanged(KDrama kdrama);
     }
 
+    public interface OnDeleteClickListener {
+        void onDeleteClick(KDrama kdrama);
+    }
+
     public WatchingKDramaAdapter(Context context, List<KDrama> kDramaList,
                                  OnWatchedButtonClickListener listener,
-                                 OnEpisodeChangeListener episodeChangeListener) {
+                                 OnEpisodeChangeListener episodeChangeListener, OnDeleteClickListener deleteClickListener) {
         this.context = context;
         this.kDramaList = kDramaList;
         this.watchedButtonClickListener = listener;
         this.episodeChangeListener = episodeChangeListener;
+        this.deleteClickListener = deleteClickListener;
     }
 
     @NonNull
@@ -70,6 +77,8 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
         ProgressBar progressBar;
         TextView progressText;
 
+        ImageButton deleteButton;
+
         ViewHolder(View itemView) {
             super(itemView);
             coverImageView = itemView.findViewById(R.id.anime_cover);
@@ -79,6 +88,7 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
             decrementButton = itemView.findViewById(R.id.btn_minus);
             progressBar = itemView.findViewById(R.id.progress_bar);
             progressText = itemView.findViewById(R.id.tv_progress_text);
+            deleteButton = itemView.findViewById(R.id.btn_delete);
         }
 
         void bind(KDrama currentKDrama) {
@@ -127,6 +137,14 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
                     currentKDrama.setWatchedEpisodes(currentEpisodes - 1);
                     notifyItemChanged(getAdapterPosition());
                     episodeChangeListener.onEpisodeChanged(currentKDrama);
+                }
+            });
+
+            // delete button
+            // Add delete button click listener
+            deleteButton.setOnClickListener(v -> {
+                if (deleteClickListener != null) {
+                    deleteClickListener.onDeleteClick(currentKDrama);
                 }
             });
 
