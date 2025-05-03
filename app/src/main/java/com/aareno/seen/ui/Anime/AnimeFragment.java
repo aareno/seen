@@ -13,6 +13,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -46,8 +47,9 @@ public class AnimeFragment extends Fragment {
     private Stack<UndoAction_anime> undoStack = new Stack<>();
     private UndoListener undoListener;
     private EditText searchEditText;
+    private TextView watchingCountText;
+    private TextView watchedCountText;
     private ImageButton clearSearchButton;
-
     private List<Anime> originalWatchingList = new ArrayList<>();
     private List<Anime> originalWatchedList = new ArrayList<>();
 
@@ -79,6 +81,8 @@ public class AnimeFragment extends Fragment {
 
         searchEditText = view.findViewById(R.id.search_edit_text);
         clearSearchButton = view.findViewById(R.id.clear_search);
+        watchingCountText = view.findViewById(R.id.watching_count);
+        watchedCountText = view.findViewById(R.id.watched_count);
 
         setupSearch();
         setupAdapters();
@@ -114,6 +118,7 @@ public class AnimeFragment extends Fragment {
                 watchingList.clear();
                 watchingList.addAll(watchingAnime);
                 watchingAdapter.notifyDataSetChanged();
+                updateCounts();
             }
 
             @Override
@@ -131,6 +136,7 @@ public class AnimeFragment extends Fragment {
                 watchedList.clear();
                 watchedList.addAll(watchedAnime);
                 watchedAdapter.notifyDataSetChanged();
+                updateCounts();
             }
 
             @Override
@@ -184,6 +190,7 @@ public class AnimeFragment extends Fragment {
                 undoListener.setUndoEnabled(!undoStack.isEmpty());
             }
         }
+        updateCounts();
     }
 
     public void addAnimeToWatchingList(Anime anime) {
@@ -191,6 +198,7 @@ public class AnimeFragment extends Fragment {
             @Override
             public void onDataLoaded(Long id) {
                 watchingList.add(anime);
+                updateCounts();
                 watchingAdapter.notifyDataSetChanged();
                 addToUndoStack(new UndoAction_anime(
                         UndoAction_anime.ActionType.ADD_TO_WATCHING,
@@ -204,6 +212,7 @@ public class AnimeFragment extends Fragment {
                 showErrorMessage("Failed to add anime");
             }
         });
+        updateCounts();
     }
 
     private void undoAddToWatching(Anime anime, int position) {
@@ -211,21 +220,27 @@ public class AnimeFragment extends Fragment {
             @Override
             public void onDataLoaded(Void data) {
                 watchingList.remove(position);
+                updateCounts();
                 watchingAdapter.notifyDataSetChanged();
             }
-
             @Override
             public void onError(Exception e) {
                 showErrorMessage("Failed to undo add anime");
             }
         });
+        originalWatchingList.remove(anime);
+        updateCounts();
+
     }
 
     private void moveAnimeToWatched(Anime anime) {
         int originalPosition = watchingList.indexOf(anime);
         watchingList.remove(anime);
+        originalWatchingList.remove(anime);
         anime.markAsFinished();
         watchedList.add(anime);
+        originalWatchedList.add(anime);
+        updateCounts();
 
         repository.updateAnime(anime, new AnimeRepository.OnDataLoadedCallback<Void>() {
             @Override
@@ -248,9 +263,12 @@ public class AnimeFragment extends Fragment {
 
     private void undoMoveToWatched(Anime anime, int originalPosition) {
         watchedList.remove(anime);
+        originalWatchedList.remove(anime);
         anime.setWatching(true);
         anime.setFinishedDate(null);
         watchingList.add(originalPosition, anime);
+        originalWatchingList.add(originalPosition, anime);
+        updateCounts();
 
         repository.updateAnime(anime, new AnimeRepository.OnDataLoadedCallback<Void>() {
             @Override
@@ -269,7 +287,7 @@ public class AnimeFragment extends Fragment {
     private void deleteWatchedAnime(Anime anime) {
         int position = watchedList.indexOf(anime);
         watchedList.remove(anime);
-
+        updateCounts();
         repository.deleteAnime(anime, new AnimeRepository.OnDataLoadedCallback<Void>() {
             @Override
             public void onDataLoaded(Void data) {
@@ -293,6 +311,7 @@ public class AnimeFragment extends Fragment {
             @Override
             public void onDataLoaded(Long id) {
                 watchedList.add(position, anime);
+                updateCounts();
                 watchedAdapter.notifyDataSetChanged();
             }
 
@@ -403,6 +422,11 @@ public class AnimeFragment extends Fragment {
         searchEditText.setFocusableInTouchMode(true);
     }
 
+    private void updateCounts() {
+        watchingCountText.setText(String.format("(%d)", watchingList.size()));
+        watchedCountText.setText(String.format("(%d)", watchedList.size()));
+    }
+
     private void filterAnimeLists(String query) {
         query = query.toLowerCase().trim();
 
@@ -429,6 +453,7 @@ public class AnimeFragment extends Fragment {
         watchedList.clear();
         watchedList.addAll(filteredWatchedList);
         watchedAdapter.notifyDataSetChanged();
+        updateCounts();
     }
 
     private boolean animeMatchesQuery(Anime anime, String query) {

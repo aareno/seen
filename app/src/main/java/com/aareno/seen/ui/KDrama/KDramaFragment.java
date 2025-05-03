@@ -13,6 +13,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -43,6 +44,8 @@ public class KDramaFragment extends Fragment {
     private UndoListener undoListener;
     private EditText searchEditText;
     private ImageButton clearSearchButton;
+    private TextView watchingCountText;
+    private TextView watchedCountText;
     private List<KDrama> watchingList = new ArrayList<>();
     private List<KDrama> watchedList = new ArrayList<>();
     private List<KDrama> originalWatchingList = new ArrayList<>();
@@ -79,6 +82,8 @@ public class KDramaFragment extends Fragment {
 
         searchEditText = view.findViewById(R.id.search_edit_text);
         clearSearchButton = view.findViewById(R.id.clear_search);
+        watchingCountText = view.findViewById(R.id.watching_count);
+        watchedCountText = view.findViewById(R.id.watched_count);
 
         setupSearch();
         setupAdapters();
@@ -114,6 +119,7 @@ public class KDramaFragment extends Fragment {
                 watchingList.clear();
                 watchingList.addAll(watchingKDrama);
                 watchingAdapter.notifyDataSetChanged();
+                updateCounts();
             }
 
             @Override
@@ -131,6 +137,7 @@ public class KDramaFragment extends Fragment {
                 watchedList.clear();
                 watchedList.addAll(watchedKDrama);
                 watchedAdapter.notifyDataSetChanged();
+                updateCounts();
             }
 
             @Override
@@ -247,6 +254,7 @@ public class KDramaFragment extends Fragment {
             @Override
             public void onDataLoaded(Long id) {
                 watchingList.add(kdrama);
+                updateCounts();
                 watchingAdapter.notifyDataSetChanged();
                 addToUndoStack(new UndoAction_kdrama(
                         UndoAction_kdrama.ActionType.ADD_TO_WATCHING,
@@ -254,7 +262,6 @@ public class KDramaFragment extends Fragment {
                         watchingList.size() - 1
                 ));
             }
-
             @Override
             public void onError(Exception e) {
                 showErrorMessage("Failed to add anime");
@@ -265,9 +272,11 @@ public class KDramaFragment extends Fragment {
     private void moveKDramaToWatched(KDrama kdrama) {
         int originalPosition = watchingList.indexOf(kdrama);
         watchingList.remove(kdrama);
+        originalWatchingList.remove(kdrama);
         kdrama.markAsFinished();
         watchedList.add(kdrama);
-
+        originalWatchedList.add(kdrama);
+        updateCounts();
         repository.updateKdrama(kdrama, new KDramaRepository.OnDataLoadedCallback<Void>() {
             @Override
             public void onDataLoaded(Void data) {
@@ -279,12 +288,12 @@ public class KDramaFragment extends Fragment {
                         originalPosition
                 ));
             }
-
             @Override
             public void onError(Exception e) {
                 showErrorMessage("Failed to move anime");
             }
         });
+
     }
 
     private void deleteWatchedKDrama(KDrama kdrama) {
@@ -307,6 +316,7 @@ public class KDramaFragment extends Fragment {
                 showErrorMessage("Failed to delete anime");
             }
         });
+        updateCounts();
     }
     /* ******************************************** */
 
@@ -354,9 +364,11 @@ public class KDramaFragment extends Fragment {
 
     private void undoMoveToWatched(KDrama kdrama, int originalPosition) {
         watchedList.remove(kdrama);
+        originalWatchedList.remove(kdrama);
         kdrama.setWatching(true);
         kdrama.setFinishedDate(null);
         watchingList.add(originalPosition, kdrama);
+        originalWatchingList.add(originalPosition, kdrama);
 
         repository.updateKdrama(kdrama, new KDramaRepository.OnDataLoadedCallback<Void>() {
             @Override
@@ -370,6 +382,7 @@ public class KDramaFragment extends Fragment {
                 showErrorMessage("Failed to undo move");
             }
         });
+        updateCounts();
     }
 
     private void undoRemoveFromWatched(KDrama kdrama, int position) {
@@ -385,6 +398,7 @@ public class KDramaFragment extends Fragment {
                 showErrorMessage("Failed to undo delete");
             }
         });
+        updateCounts();
     }
 
     private void undoAddToWatching(KDrama kdrama, int position) {
@@ -392,6 +406,7 @@ public class KDramaFragment extends Fragment {
             @Override
             public void onDataLoaded(Void data) {
                 watchingList.remove(position);
+                updateCounts();
                 watchingAdapter.notifyDataSetChanged();
             }
 
@@ -400,6 +415,8 @@ public class KDramaFragment extends Fragment {
                 showErrorMessage("Failed to undo add anime");
             }
         });
+        originalWatchingList.remove(kdrama);
+        updateCounts();
     }
 
     /* filter logic */
@@ -430,11 +447,17 @@ public class KDramaFragment extends Fragment {
         watchedList.clear();
         watchedList.addAll(filteredWatchedList);
         watchedAdapter.notifyDataSetChanged();
+        updateCounts();
     }
 
     private boolean KDramaMatchesQuery(KDrama kdrama, String query) {
         return kdrama.getTitleEnglish().toLowerCase().contains(query) ||
                 kdrama.getTitleKorean().contains(query);
+    }
+
+    private void updateCounts() {
+        watchingCountText.setText(String.format("(%d)", watchingList.size()));
+        watchedCountText.setText(String.format("(%d)", watchedList.size()));
     }
 
     private void resetLists() {

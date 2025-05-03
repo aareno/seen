@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
@@ -26,6 +28,8 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -40,6 +44,10 @@ public class SearchKDramaActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private KDramaSearchAdapter kDramaAdapter;
     private List<KDrama> kDramaList;
+    private List<KDrama> selectedKDramaList = new ArrayList<>();
+    private Handler mainHandler = new Handler(Looper.getMainLooper());
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private ImageButton doneButton; // Add this
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,9 +58,12 @@ public class SearchKDramaActivity extends AppCompatActivity {
         searchEditText = findViewById(R.id.search_edit_text);
         searchButton = findViewById(R.id.search_button);
         recyclerView = findViewById(R.id.search_recycler_view);
+        doneButton = findViewById(R.id.back_button); // Initialize done button
 
         ImageButton backButton = findViewById(R.id.back_button);
-        backButton.setOnClickListener(v -> onBackPressed());
+        backButton.setOnClickListener(v -> {
+            sendResultAndFinish();
+        });
 
         // Initialize kdrama list
         kDramaList = new ArrayList<>();
@@ -61,27 +72,50 @@ public class SearchKDramaActivity extends AppCompatActivity {
         kDramaAdapter = new KDramaSearchAdapter(kDramaList, new KDramaSearchAdapter.OnItemClickListener() {
             @Override
             public void onAddToWatchingClick(KDrama kdrama) {
-                try {
-                    Log.d(TAG, "Adding KDrama: " + kdrama.getTitleEnglish());
-                    Log.d(TAG, "KDrama ID: " + kdrama.getId());
-                    Log.d(TAG, "KDrama Image URL: " + kdrama.getCoverImageUrl());
+                executorService.execute(() -> {
+                    try {
+                        // Check for duplicates
+                        boolean isDuplicate = selectedKDramaList.stream()
+                                .anyMatch(d -> d.getId() == kdrama.getId());
 
-                    Intent resultIntent = new Intent();
-                    kdrama.setWatching(true);
-                    resultIntent.putExtra("selected_kdrama", kdrama);
-                    setResult(RESULT_OK, resultIntent);
-                    finish();
-                } catch (Exception e) {
-                    Log.e(TAG, "Error adding kdrama to watching list", e);
-                    Toast.makeText(SearchKDramaActivity.this,
-                            "Error adding kdrama: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
-                }
+                        if (!isDuplicate) {
+                            Log.d(TAG, "Adding KDrama: " + kdrama.getTitleEnglish());
+                            Log.d(TAG, "KDrama ID: " + kdrama.getId());
+                            Log.d(TAG, "KDrama Image URL: " + kdrama.getCoverImageUrl());
+
+                            kdrama.setWatching(true);
+                            selectedKDramaList.add(kdrama);
+
+                            mainHandler.post(() -> {
+                                kDramaAdapter.notifyDataSetChanged();
+                                Toast.makeText(SearchKDramaActivity.this,
+                                        "Added " + kdrama.getTitleEnglish() + " to watching list",
+                                        Toast.LENGTH_SHORT).show();
+                            });
+                        } else {
+                            mainHandler.post(() -> {
+                                Toast.makeText(SearchKDramaActivity.this,
+                                        "Already added to watching list",
+                                        Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                    } catch (Exception e) {
+                        mainHandler.post(() -> {
+                            Log.e(TAG, "Error adding kdrama to watching list", e);
+                            Toast.makeText(SearchKDramaActivity.this,
+                                    "Error adding kdrama: " + e.getMessage(),
+                                    Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                });
             }
         });
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(kDramaAdapter);
+
+        // Done button click listener
+        doneButton.setOnClickListener(v -> sendResultAndFinish());
 
         // Search button click listener
         searchButton.setOnClickListener(v -> {
@@ -105,6 +139,16 @@ public class SearchKDramaActivity extends AppCompatActivity {
         });
     }
 
+    private void sendResultAndFinish() {
+        if (!selectedKDramaList.isEmpty()) {
+            Intent resultIntent = new Intent();
+            resultIntent.putExtra("selected_kdrama_list", new ArrayList<>(selectedKDramaList));
+            setResult(RESULT_OK, resultIntent);
+        }
+        executorService.shutdown();
+        finish();
+    }
+
     private void searchKDrama(String query) {
         OkHttpClient client = new OkHttpClient();
 
@@ -120,7 +164,7 @@ public class SearchKDramaActivity extends AppCompatActivity {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                runOnUiThread(() -> {
+                mainHandler.post(() -> {
                     Toast.makeText(SearchKDramaActivity.this,
                             "Search failed: " + e.getMessage(),
                             Toast.LENGTH_SHORT).show();
@@ -142,24 +186,23 @@ public class SearchKDramaActivity extends AppCompatActivity {
                         if (show.has("language") && "Korean".equals(show.getString("language"))) {
                             int id = show.getInt("id");
                             String title = show.getString("name");
-                            Log.d(TAG, "Title: " + show);
 
                             String imageUrl = null;
-                            JSONObject imageObj = show.getJSONObject("image");
-                            imageUrl = imageObj.optString("medium", null);
-                            Log.d(TAG, "Image URL: " + imageUrl);
+                            if (show.has("image") && !show.isNull("image")) {
+                                JSONObject imageObj = show.getJSONObject("image");
+                                imageUrl = imageObj.optString("medium", null);
+                            }
 
-                            KDrama kdrama = new KDrama(
-                                    id,
-                                    title,
-                                    title,
-                                    imageUrl
-                            );
+                            KDrama kdrama = new KDrama(id, title, title, imageUrl);
+                            // Check if this drama is already selected
+                            boolean isSelected = selectedKDramaList.stream()
+                                    .anyMatch(d -> d.getId() == id);
+                            kdrama.setWatching(isSelected);
                             kdramas.add(kdrama);
                         }
                     }
 
-                    runOnUiThread(() -> {
+                    mainHandler.post(() -> {
                         kDramaList.clear();
                         kDramaList.addAll(kdramas);
                         kDramaAdapter.notifyDataSetChanged();
@@ -173,7 +216,7 @@ public class SearchKDramaActivity extends AppCompatActivity {
 
                 } catch (JSONException e) {
                     e.printStackTrace();
-                    runOnUiThread(() -> {
+                    mainHandler.post(() -> {
                         Toast.makeText(SearchKDramaActivity.this,
                                 "Error parsing search results",
                                 Toast.LENGTH_SHORT).show();
@@ -181,5 +224,13 @@ public class SearchKDramaActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdown();
+        }
     }
 }

@@ -42,10 +42,13 @@ public class SearchAnimeActivity extends AppCompatActivity {
     private AnimeSearchAdapter animeAdapter;
     private List<Anime> animeList;
 
+    private List<Anime> selectedAnimeList = new ArrayList<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_anime);
+
 
         // Initialize views
         searchEditText = findViewById(R.id.search_edit_text);
@@ -53,7 +56,7 @@ public class SearchAnimeActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.search_recycler_view);
 
         ImageButton backButton = findViewById(R.id.back_button);
-        backButton.setOnClickListener(v -> onBackPressed());
+        backButton.setOnClickListener(v -> finish());
 
         // Initialize anime list
         animeList = new ArrayList<>();
@@ -68,12 +71,18 @@ public class SearchAnimeActivity extends AppCompatActivity {
                     Log.d(TAG, "Anime ID: " + anime.getId());
                     Log.d(TAG, "Anime Cover URL: " + anime.getCoverImageUrl());
 
+                    selectedAnimeList.add(anime);
+
                     // Create an intent to return the selected anime
                     Intent resultIntent = new Intent();
                     anime.setWatching(true);
-                    resultIntent.putExtra("selected_anime", anime);
+                    resultIntent.putExtra("selected_anime_list", new ArrayList<>(selectedAnimeList));
                     setResult(RESULT_OK, resultIntent);
-                    finish(); // Close the search activity
+
+                    Toast.makeText(SearchAnimeActivity.this,
+                            "Added " + anime.getTitleEnglish() + " to watching list",
+                            Toast.LENGTH_SHORT).show();
+
                 } catch (Exception e) {
                     // Log any exceptions
                     Log.e(TAG, "Error adding anime to watching list", e);

@@ -21,6 +21,8 @@ import com.aareno.seen.ui.KDrama.SearchKDramaActivity;
 import com.aareno.seen.ui.TvMovies.TvMoviesFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+import java.util.ArrayList;
+
 public class MainActivity extends AppCompatActivity implements AnimeFragment.UndoListener {
     private static final int SEARCH_ANIME_REQUEST_CODE = 1001;
     private static final int SEARCH_KDRAMA_REQUEST_CODE = 1002;
@@ -150,22 +152,20 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
 
             switch (requestCode) {
                 case SEARCH_ANIME_REQUEST_CODE:
-                    Anime selectedAnime = (Anime) data.getSerializableExtra("selected_anime");
+                    ArrayList<Anime> selectedAnime = (ArrayList<Anime>) data.getSerializableExtra("selected_anime_list");
                     if (selectedAnime != null && currentFragment instanceof AnimeFragment) {
-                        ((AnimeFragment) currentFragment).addAnimeToWatchingList(selectedAnime);
-                        Toast.makeText(this,
-                                "Added " + selectedAnime.getTitleRomaji() + " to watching list",
-                                Toast.LENGTH_SHORT).show();
+                        for (Anime anime : selectedAnime) {
+                            ((AnimeFragment) currentFragment).addAnimeToWatchingList(anime);
+                        }
                     }
                     break;
 
                 case SEARCH_KDRAMA_REQUEST_CODE:
-                    KDrama selectedKDrama = (KDrama) data.getSerializableExtra("selected_kdrama");
+                    ArrayList<KDrama> selectedKDrama = (ArrayList<KDrama>) data.getSerializableExtra("selected_kdrama_list");
                     if (selectedKDrama != null && currentFragment instanceof KDramaFragment) {
-                        ((KDramaFragment) currentFragment).addKDramaToWatchingList(selectedKDrama);
-                        Toast.makeText(this,
-                                "Added " + selectedKDrama.getTitleEnglish() + " to watching list",
-                                Toast.LENGTH_SHORT).show();
+                        for (KDrama kdrama : selectedKDrama) {
+                            ((KDramaFragment) currentFragment).addKDramaToWatchingList(kdrama);
+                        }
                     }
                     break;
             }
