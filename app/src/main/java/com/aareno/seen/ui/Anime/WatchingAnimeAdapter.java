@@ -20,6 +20,7 @@ import com.aareno.seen.ui.KDrama.KDrama;
 import com.aareno.seen.ui.KDrama.WatchingKDramaAdapter;
 import com.bumptech.glide.Glide;
 
+import java.util.Date;
 import java.util.List;
 
 public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdapter.ViewHolder> {
@@ -157,8 +158,14 @@ public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdap
                 dayIndicator.setSelected(false);
                 dayIndicator.setAlpha(0.5f);
             }
+            // Check if the anime is past its end date
+            Date currentDate = new Date();
+            if (anime.getEndDate() != null && currentDate.after(anime.getEndDate())) {
+                // Switch status to FINISHED if the end date has passed
+                anime.setAiringStatus(Anime.AiringStatus.FINISHED);
+            }
 
-            // If the anime is ongoing, highlight the airing days
+            // Now update indicators based on the current airing status
             if (anime.getAiringDays() != null && !anime.getAiringDays().isEmpty()) {
                 for (Integer day : anime.getAiringDays()) {
                     // Convert day to index (assuming 1 = Monday, 7 = Sunday)
@@ -172,6 +179,7 @@ public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdap
                                 indicator.setAlpha(1.0f);
                                 break;
                             case FINISHED:
+                                // Ensure all indicators remain inactive for finished anime
                                 indicator.setSelected(false);
                                 indicator.setAlpha(0.3f);
                                 break;
