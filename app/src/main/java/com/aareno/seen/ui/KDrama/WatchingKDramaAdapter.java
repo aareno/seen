@@ -15,6 +15,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aareno.seen.R;
+import com.aareno.seen.ui.Anime.Anime;
 import com.bumptech.glide.Glide;
 
 import java.util.List;
@@ -78,6 +79,7 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
         TextView progressText;
 
         ImageButton deleteButton;
+        TextView[] dayIndicators;
 
         ViewHolder(View itemView) {
             super(itemView);
@@ -89,6 +91,17 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
             progressBar = itemView.findViewById(R.id.progress_bar);
             progressText = itemView.findViewById(R.id.tv_progress_text);
             deleteButton = itemView.findViewById(R.id.btn_delete);
+
+            // Initialize day indicators array
+            dayIndicators = new TextView[]{
+                    itemView.findViewById(R.id.day_mon),
+                    itemView.findViewById(R.id.day_tue),
+                    itemView.findViewById(R.id.day_wed),
+                    itemView.findViewById(R.id.day_thu),
+                    itemView.findViewById(R.id.day_fri),
+                    itemView.findViewById(R.id.day_sat),
+                    itemView.findViewById(R.id.day_sun)
+            };
         }
 
         void bind(KDrama currentKDrama) {
@@ -152,6 +165,43 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
             progressBar.setProgress(currentKDrama.getWatchedEpisodes());
             progressText.setText(currentKDrama.getWatchedEpisodes() + "/" + currentKDrama.getEpisodeCount());
 
+
+            updateDayIndicators(currentKDrama);
         }
+
+        private void updateDayIndicators(KDrama kdrama) {
+            // First, reset all indicators to inactive state
+            for (TextView dayIndicator : dayIndicators) {
+                dayIndicator.setSelected(false);
+                dayIndicator.setAlpha(0.5f);
+            }
+
+            // If the anime is ongoing, highlight the airing days
+            if (kdrama.getAiringDays() != null && !kdrama.getAiringDays().isEmpty()) {
+                for (Integer day : kdrama.getAiringDays()) {
+                    // Convert day to index (assuming 1 = Monday, 7 = Sunday)
+                    int index = day - 1;
+                    if (index >= 0 && index < dayIndicators.length) {
+                        TextView indicator = dayIndicators[index];
+
+                        switch (kdrama.getAiringStatus()) {
+                            case ONGOING:
+                                indicator.setSelected(true);
+                                indicator.setAlpha(1.0f);
+                                break;
+                            case FINISHED:
+                                indicator.setSelected(false);
+                                indicator.setAlpha(0.3f);
+                                break;
+                            case NOT_STARTED:
+                                indicator.setSelected(true);
+                                indicator.setAlpha(0.7f);
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
     }
 }

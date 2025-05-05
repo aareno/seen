@@ -255,6 +255,7 @@ public class KDramaFragment extends Fragment {
             @Override
             public void onDataLoaded(Long id) {
                 watchingList.add(kdrama);
+                originalWatchingList.add(kdrama);
                 updateCounts();
                 watchingAdapter.notifyDataSetChanged();
                 addToUndoStack(new UndoAction_kdrama(

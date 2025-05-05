@@ -5,12 +5,15 @@ import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 
 import com.aareno.seen.data.Anime.DateConverter;
+import com.aareno.seen.data.Anime.ListConverter;
 import com.aareno.seen.ui.Anime.Anime;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
+
 @Entity(tableName = "kdrama")
-@TypeConverters(DateConverter.class)
+@TypeConverters({DateConverter.class, ListConverter.class})
 public class KDrama implements Serializable {
 
     @PrimaryKey
@@ -23,15 +26,24 @@ public class KDrama implements Serializable {
     private boolean isWatching;
     private int episodeCount;
 
+    private List<Integer> airingDays;
+    private Date startDate;
+    private Date endDate;
+    private Anime.AiringStatus airingStatus;
+
     public KDrama() {}
 
-    public KDrama(int id, String titleEnglish, String titleKorean, String coverImageUrl) {
+    public KDrama(int id, String titleEnglish, String titleKorean, String coverImageUrl, List<Integer> airingDays, Date startDate, Date endDate) {
         this.id = id;
         this.titleEnglish = titleEnglish != null ? titleEnglish : "";
         this.titleKorean = titleKorean != null ? titleKorean : "";
         this.coverImageUrl = coverImageUrl != null ? coverImageUrl : "";
         this.watchedEpisodes = 0;
         this.isWatching = true;
+        this.airingDays = airingDays;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        updateAiringStatus();
     }
 
     public int getId() { return id; }
@@ -59,6 +71,7 @@ public class KDrama implements Serializable {
     public void markAsFinished() {
         this.finishedDate = new Date(); // Current date
         this.isWatching = false; // Mark as not watching when finished
+        this.airingStatus = Anime.AiringStatus.FINISHED;
     }
     public Date getFinishedDate() {
         return finishedDate;
@@ -92,5 +105,45 @@ public class KDrama implements Serializable {
     @Override
     public int hashCode() {
         return Integer.hashCode(id);
+    }
+
+    // Add new getters and setters
+    public List<Integer> getAiringDays() {return airingDays;}
+
+    public void setAiringDays(List<Integer> airingDays) {this.airingDays = airingDays;}
+
+    public Date getStartDate() {
+        return startDate;}
+
+    public void setStartDate(Date startDate) {
+        this.startDate = startDate;
+        updateAiringStatus();
+    }
+    public Date getEndDate() {return endDate;}
+
+    public void setEndDate(Date endDate) {
+        this.endDate = endDate;
+        updateAiringStatus();
+    }
+
+    public Anime.AiringStatus getAiringStatus() {return airingStatus;}
+
+    public void setAiringStatus(Anime.AiringStatus airingStatus) {this.airingStatus = airingStatus;}
+
+    // Method to update airing status
+    public void updateAiringStatus() {
+        Date currentDate = new Date();
+
+        if (endDate != null && currentDate.after(endDate)) {
+            this.airingStatus = Anime.AiringStatus.FINISHED;
+        } else if (startDate != null && currentDate.before(startDate)) {
+            this.airingStatus = Anime.AiringStatus.NOT_STARTED;
+        } else {
+            this.airingStatus = Anime.AiringStatus.ONGOING;
+        }
+    }
+
+    public boolean airsOnDay(int day) {
+        return airingDays != null && airingDays.contains(day);
     }
 }
