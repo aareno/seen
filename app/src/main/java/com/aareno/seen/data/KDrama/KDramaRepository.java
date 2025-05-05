@@ -101,6 +101,29 @@ public class KDramaRepository {
         });
     }
 
+    public void updateKdramaEpisodeCount(int kdramaId, int newEpisodeCount, KDramaRepository.OnDataLoadedCallback<Void> callback) {
+        executorService.execute(() -> {
+            try {
+                KDrama kdrama = database.kDramaDao().getKdramaById(kdramaId); // Fetch the existing KDrama
+                if (kdrama != null) {
+                    kdrama.setEpisodeCount(newEpisodeCount);
+                    database.kDramaDao().update(kdrama);
+                    new Handler(Looper.getMainLooper()).post(() ->
+                            callback.onDataLoaded(null)
+                    );
+                } else {
+                    new Handler(Looper.getMainLooper()).post(() ->
+                            callback.onError(new Exception("KDrama not found"))
+                    );
+                }
+            } catch (Exception e) {
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onError(e)
+                );
+            }
+        });
+    }
+
     public void shutdown() {
         executorService.shutdown();
     }

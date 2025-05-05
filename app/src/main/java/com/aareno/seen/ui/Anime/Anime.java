@@ -144,9 +144,4 @@ public class Anime implements Serializable {
         }
     }
 
-    public boolean airsOnDay(int day) {
-        return airingDays != null && airingDays.contains(day);
-    }
-
-
 }

@@ -42,6 +42,7 @@ dependencies {
 
     // OkHttp
     implementation(libs.okhttp)
+    implementation(libs.workmanager)
     // Glide
     implementation(libs.gson)
     implementation(libs.glide)

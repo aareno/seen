@@ -14,6 +14,8 @@ public class AnimeRepository {
     private AnimeDatabase database;
     private ExecutorService executorService;
 
+    private AnimeDao animeDao;
+
     public AnimeRepository(Context context) {
         database = AnimeDatabase.getInstance(context);
         executorService = Executors.newSingleThreadExecutor();
@@ -86,6 +88,29 @@ public class AnimeRepository {
                 new Handler(Looper.getMainLooper()).post(() ->
                         callback.onDataLoaded(null)
                 );
+            } catch (Exception e) {
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onError(e)
+                );
+            }
+        });
+    }
+
+    public void updateAnimeEpisodeCount(String title, int newEpisodeCount, OnDataLoadedCallback<Void> callback) {
+        executorService.execute(() -> {
+            try {
+                Anime anime = database.animeDao().getAnimeByTitle(title);
+                if (anime != null) {
+                    anime.setEpisodeCount(newEpisodeCount);
+                    database.animeDao().update(anime);
+                    new Handler(Looper.getMainLooper()).post(() ->
+                            callback.onDataLoaded(null)
+                    );
+                } else {
+                    new Handler(Looper.getMainLooper()).post(() ->
+                            callback.onError(new Exception("KDrama not found"))
+                    );
+                }
             } catch (Exception e) {
                 new Handler(Looper.getMainLooper()).post(() ->
                         callback.onError(e)

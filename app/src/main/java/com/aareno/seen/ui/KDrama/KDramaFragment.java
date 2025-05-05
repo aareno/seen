@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.aareno.seen.R;
 import com.aareno.seen.data.Anime.AnimeRepository;
 import com.aareno.seen.data.KDrama.KDramaRepository;
+import com.aareno.seen.data.WorkScheduler;
 import com.aareno.seen.ui.Anime.Anime;
 import com.aareno.seen.ui.Anime.UndoAction_anime;
 
@@ -137,6 +138,7 @@ public class KDramaFragment extends Fragment {
                 originalWatchedList.addAll(watchedKDrama);
                 watchedList.clear();
                 watchedList.addAll(watchedKDrama);
+                scheduleUpdatesForAllOngoingAnimes();
                 watchedAdapter.notifyDataSetChanged();
                 updateCounts();
             }
@@ -147,6 +149,14 @@ public class KDramaFragment extends Fragment {
                 showErrorMessage("Failed to load watched kdrama");
             }
         });
+    }
+
+    private void scheduleUpdatesForAllOngoingAnimes() {
+        for (KDrama kdrama : watchingList) {
+            if (kdrama.getAiringStatus() == Anime.AiringStatus.ONGOING) {
+                WorkScheduler.schedulePeriodicUpdate(requireContext(), kdrama.getId(), "kdrama");
+            }
+        }
     }
 
     // Search Logic

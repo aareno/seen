@@ -13,6 +13,8 @@ import java.util.List;
 
 @Dao
 public interface AnimeDao {
+    @Query("SELECT * FROM anime WHERE titleRomaji = :title")
+    Anime getAnimeByTitle(String title);
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     long insert(Anime anime);
 

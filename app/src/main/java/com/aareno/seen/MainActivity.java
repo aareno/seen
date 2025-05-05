@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.aareno.seen.data.WorkScheduler;
 import com.aareno.seen.ui.Anime.Anime;
 import com.aareno.seen.ui.Anime.AnimeFragment;
 import com.aareno.seen.ui.Anime.SearchAnimeActivity;
@@ -124,6 +125,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                     .commit();
             bottomNavigation.setSelectedItemId(R.id.nav_anime);
         }
+
     }
 
     // Helper method to create ColorStateList

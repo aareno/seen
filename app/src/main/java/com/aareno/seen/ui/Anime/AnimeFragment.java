@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.aareno.seen.R;
 import com.aareno.seen.data.Anime.AnimeRepository;
+import com.aareno.seen.data.WorkScheduler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -117,6 +118,7 @@ public class AnimeFragment extends Fragment {
                 originalWatchingList.addAll(watchingAnime);
                 watchingList.clear();
                 watchingList.addAll(watchingAnime);
+                scheduleUpdatesForAllOngoingAnimes();
                 watchingAdapter.notifyDataSetChanged();
                 updateCounts();
             }
@@ -145,6 +147,14 @@ public class AnimeFragment extends Fragment {
                 showErrorMessage("Failed to load watched anime");
             }
         });
+    }
+
+    private void scheduleUpdatesForAllOngoingAnimes() {
+        for (Anime anime : watchingList) {
+            if (anime.getAiringStatus() == Anime.AiringStatus.ONGOING) {
+                WorkScheduler.schedulePeriodicUpdate(requireContext(), anime.getId(), "anime");
+            }
+        }
     }
 
     private void updateAnimeEpisodes(Anime anime) {

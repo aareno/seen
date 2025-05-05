@@ -13,6 +13,8 @@ import java.util.List;
 
 @Dao
 public interface KDramaDao {
+    @Query("SELECT * FROM kdrama WHERE id = :id")
+    KDrama getKdramaById(int id);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     long insert(KDrama kdrama);
