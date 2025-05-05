@@ -17,7 +17,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -29,6 +28,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 import okhttp3.Call;
@@ -62,72 +62,59 @@ public class SearchAnimeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_anime);
 
+        initializeViews();
+        setupRecyclerViews();
+        setupSearchListeners();
+        loadPopularAnime();
+    }
 
-        // Initialize views
+    private void initializeViews() {
         searchEditText = findViewById(R.id.search_edit_text);
         searchButton = findViewById(R.id.search_button);
         recyclerView = findViewById(R.id.search_recycler_view);
-
-        // Initialize popular anime views and list
         popularRecyclerView = findViewById(R.id.popular_recycler_view);
-        popularAnimeList = new ArrayList<>();
         searchResultsTitle = findViewById(R.id.search_results_title);
         popularTitle = findViewById(R.id.popular_title);
+        animeList = new ArrayList<>();
+        popularAnimeList = new ArrayList<>();
 
         ImageButton backButton = findViewById(R.id.back_button);
         backButton.setOnClickListener(v -> finish());
+    }
 
-        // Initialize anime list
-        animeList = new ArrayList<>();
+    private void setupRecyclerViews() {
+        AnimeSearchAdapter.OnItemClickListener listener = anime -> {
+            try {
+                Log.d(TAG, "Adding anime: " + anime.getTitleRomaji());
+                selectedAnimeList.add(anime);
 
-        // Setup popular anime RecyclerView
-        popularAnimeAdapter = new AnimeSearchAdapter(popularAnimeList, new AnimeSearchAdapter.OnItemClickListener() {
-            @Override
-            public void onAddToWatchingClick(Anime anime) {
-                // Same implementation as your existing onAddToWatchingClick
+                Intent resultIntent = new Intent();
+                anime.setWatching(true);
+                resultIntent.putExtra("selected_anime_list", new ArrayList<>(selectedAnimeList));
+                setResult(RESULT_OK, resultIntent);
+
+                Toast.makeText(SearchAnimeActivity.this,
+                        "Added " + anime.getTitleEnglish() + " to watching list",
+                        Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                Log.e(TAG, "Error adding anime to watching list", e);
+                Toast.makeText(SearchAnimeActivity.this,
+                        "Error adding anime: " + e.getMessage(),
+                        Toast.LENGTH_SHORT).show();
             }
-        });
+        };
 
-        // Setup RecyclerView
-        animeAdapter = new AnimeSearchAdapter(animeList, new AnimeSearchAdapter.OnItemClickListener() {
-            @Override
-            public void onAddToWatchingClick(Anime anime) {
-                try {
-                    // Log the anime details
-                    Log.d(TAG, "Adding anime: " + anime.getTitleRomaji());
-                    Log.d(TAG, "Anime ID: " + anime.getId());
-                    Log.d(TAG, "Anime Cover URL: " + anime.getCoverImageUrl());
-
-                    selectedAnimeList.add(anime);
-
-                    // Create an intent to return the selected anime
-                    Intent resultIntent = new Intent();
-                    anime.setWatching(true);
-                    resultIntent.putExtra("selected_anime_list", new ArrayList<>(selectedAnimeList));
-                    setResult(RESULT_OK, resultIntent);
-
-                    Toast.makeText(SearchAnimeActivity.this,
-                            "Added " + anime.getTitleEnglish() + " to watching list",
-                            Toast.LENGTH_SHORT).show();
-
-                } catch (Exception e) {
-                    // Log any exceptions
-                    Log.e(TAG, "Error adding anime to watching list", e);
-                    Toast.makeText(SearchAnimeActivity.this,
-                            "Error adding anime: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+        animeAdapter = new AnimeSearchAdapter(animeList, listener);
+        popularAnimeAdapter = new AnimeSearchAdapter(popularAnimeList, listener);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(animeAdapter);
 
         popularRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         popularRecyclerView.setAdapter(popularAnimeAdapter);
+    }
 
-        loadPopularAnime();
-        // Modify search related listeners to handle visibility
+    private void setupSearchListeners() {
         searchEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -141,25 +128,18 @@ public class SearchAnimeActivity extends AppCompatActivity {
             public void afterTextChanged(Editable s) {}
         });
 
-        // Search button click listener
         searchButton.setOnClickListener(v -> {
-            // Show keyboard and focus on search EditText
             searchEditText.requestFocus();
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.showSoftInput(searchEditText, InputMethodManager.SHOW_IMPLICIT);
         });
 
-        // Handle enter/return key press
         searchEditText.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_SEARCH ||
                     (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
-                // Hide keyboard
                 InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(searchEditText.getWindowToken(), 0);
-
-                // Perform search
-                String query = searchEditText.getText().toString();
-                searchAnime(query);
+                searchAnime(searchEditText.getText().toString());
                 return true;
             }
             return false;
@@ -169,27 +149,46 @@ public class SearchAnimeActivity extends AppCompatActivity {
     private void searchAnime(String query) {
         OkHttpClient client = new OkHttpClient();
 
-        // Updated GraphQL query to include episodes
+        String graphqlQuery = "query ($search: String) { " +
+                "Page(page: 1, perPage: 10) { " +
+                "  media(search: $search, type: ANIME) { " +
+                "    id " +
+                "    title { " +
+                "      romaji " +
+                "      english " +
+                "    } " +
+                "    coverImage { " +
+                "      large " +
+                "    } " +
+                "    episodes " +
+                "    status " +
+                "    startDate { " +
+                "      year " +
+                "      month " +
+                "      day " +
+                "    } " +
+                "    endDate { " +
+                "      year " +
+                "      month " +
+                "      day " +
+                "    } " +
+                "    airingSchedule { " +
+                "      nodes { " +
+                "        airingAt " +
+                "        timeUntilAiring " +
+                "        episode " +
+                "        airingAt " +
+                "      } " +
+                "    } " +
+                "  } " +
+                "} " +
+                "}";
+
         RequestBody requestBody = new FormBody.Builder()
-                .add("query", "query ($search: String) { " +
-                        "Page(page: 1, perPage: 10) { " +
-                        "  media(search: $search, type: ANIME) { " +
-                        "    id " +
-                        "    title { " +
-                        "      romaji " +
-                        "      english " +
-                        "    } " +
-                        "    coverImage { " +
-                        "      large " +
-                        "    } " +
-                        "    episodes " +  // Added episodes field
-                        "  } " +
-                        "} " +
-                        "}")
+                .add("query", graphqlQuery)
                 .add("variables", "{\"search\":\"" + query + "\"}")
                 .build();
 
-        // Create request
         Request request = new Request.Builder()
                 .url("https://graphql.anilist.co")
                 .post(requestBody)
@@ -197,153 +196,190 @@ public class SearchAnimeActivity extends AppCompatActivity {
                 .addHeader("Accept", "application/json")
                 .build();
 
-        // Execute request
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                runOnUiThread(() -> {
-                    Toast.makeText(SearchAnimeActivity.this,
-                            "Search failed: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
-                });
+                runOnUiThread(() -> Toast.makeText(SearchAnimeActivity.this,
+                        "Search failed: " + e.getMessage(),
+                        Toast.LENGTH_SHORT).show());
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                try {
-                    String responseBody = response.body().string();
-                    JSONObject jsonObject = new JSONObject(responseBody);
-                    JSONArray mediaList = jsonObject
-                            .getJSONObject("data")
-                            .getJSONObject("Page")
-                            .getJSONArray("media");
-
-                    final List<Anime> searchResults = new ArrayList<>();
-                    for (int i = 0; i < mediaList.length(); i++) {
-                        JSONObject media = mediaList.getJSONObject(i);
-                        JSONObject title = media.getJSONObject("title");
-                        JSONObject coverImage = media.getJSONObject("coverImage");
-
-                        // Get episodes count (handle null case)
-                        int episodes = media.isNull("episodes") ? 0 : media.getInt("episodes");
-
-                        Anime anime = new Anime(
-                                media.getInt("id"),
-                                title.getString("romaji"),
-                                title.optString("english", ""),
-                                coverImage.getString("large"),
-                                episodes  // Add episodes to constructor
-                        );
-                        searchResults.add(anime);
-                    }
-
-                    runOnUiThread(() -> {
-                        animeList.clear();
-                        animeList.addAll(searchResults);
-                        animeAdapter.notifyDataSetChanged();
-                    });
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                    runOnUiThread(() -> {
-                        Toast.makeText(SearchAnimeActivity.this,
-                                "Error parsing search results",
-                                Toast.LENGTH_SHORT).show();
-                    });
-                }
+                handleAnimeResponse(response, animeList, animeAdapter);
             }
         });
     }
+
+    private void loadPopularAnime() {
+        OkHttpClient client = new OkHttpClient();
+
+        String graphqlQuery = "query { " +
+                "Page(page: 1, perPage: 10) { " +
+                "  media(sort: POPULARITY_DESC, type: ANIME) { " +
+                "    id " +
+                "    title { " +
+                "      romaji " +
+                "      english " +
+                "    } " +
+                "    coverImage { " +
+                "      large " +
+                "    } " +
+                "    episodes " +
+                "    status " +
+                "    startDate { " +
+                "      year " +
+                "      month " +
+                "      day " +
+                "    } " +
+                "    endDate { " +
+                "      year " +
+                "      month " +
+                "      day " +
+                "    } " +
+                "    airingSchedule { " +
+                "      nodes { " +
+                "        airingAt " +
+                "        timeUntilAiring " +
+                "        episode " +
+                "        airingAt " +
+                "      } " +
+                "    } " +
+                "  } " +
+                "} " +
+                "}";
+
+        RequestBody requestBody = new FormBody.Builder()
+                .add("query", graphqlQuery)
+                .build();
+
+        Request request = new Request.Builder()
+                .url("https://graphql.anilist.co")
+                .post(requestBody)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                runOnUiThread(() -> Toast.makeText(SearchAnimeActivity.this,
+                        "Failed to load popular anime: " + e.getMessage(),
+                        Toast.LENGTH_SHORT).show());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                handleAnimeResponse(response, popularAnimeList, popularAnimeAdapter);
+            }
+        });
+    }
+
+    private void handleAnimeResponse(Response response, List<Anime> animeList,
+                                     AnimeSearchAdapter adapter) throws IOException {
+        try {
+            String responseBody = response.body().string();
+            JSONObject jsonObject = new JSONObject(responseBody);
+            JSONArray mediaList = jsonObject
+                    .getJSONObject("data")
+                    .getJSONObject("Page")
+                    .getJSONArray("media");
+
+            List<Anime> results = new ArrayList<>();
+            for (int i = 0; i < mediaList.length(); i++) {
+                JSONObject media = mediaList.getJSONObject(i);
+                Anime anime = parseAnimeFromJson(media);
+                results.add(anime);
+            }
+
+            runOnUiThread(() -> {
+                animeList.clear();
+                animeList.addAll(results);
+                adapter.notifyDataSetChanged();
+            });
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+            runOnUiThread(() -> Toast.makeText(SearchAnimeActivity.this,
+                    "Error parsing results",
+                    Toast.LENGTH_SHORT).show());
+        }
+    }
+
+    private Anime parseAnimeFromJson(JSONObject media) throws JSONException {
+        JSONObject title = media.getJSONObject("title");
+        JSONObject coverImage = media.getJSONObject("coverImage");
+        int episodes = media.isNull("episodes") ? 0 : media.getInt("episodes");
+
+        // Parse dates
+        JSONObject startDateObj = media.getJSONObject("startDate");
+        JSONObject endDateObj = media.getJSONObject("endDate");
+
+        // Create Calendar instances for dates
+        Calendar startCal = Calendar.getInstance();
+        if (!startDateObj.isNull("year")) {
+            startCal.set(
+                    startDateObj.getInt("year"),
+                    startDateObj.getInt("month") - 1,
+                    startDateObj.getInt("day")
+            );
+        }
+
+        Calendar endCal = Calendar.getInstance();
+        if (!endDateObj.isNull("year")) {
+            endCal.set(
+                    endDateObj.getInt("year"),
+                    endDateObj.getInt("month") - 1,
+                    endDateObj.getInt("day")
+            );
+        }
+
+        // Parse airing schedule
+        List<Integer> airingDays = new ArrayList<>();
+        if (!media.isNull("airingSchedule")) {
+            JSONArray nodes = media.getJSONObject("airingSchedule")
+                    .getJSONArray("nodes");
+
+            for (int i = 0; i < nodes.length(); i++) {
+                JSONObject node = nodes.getJSONObject(i);
+                long airingAt = node.getLong("airingAt") * 1000; // Convert to milliseconds
+                Calendar airDate = Calendar.getInstance();
+                airDate.setTimeInMillis(airingAt);
+
+                // Convert day of week to your format (1 = Monday, 7 = Sunday)
+                int dayOfWeek = airDate.get(Calendar.DAY_OF_WEEK);
+                dayOfWeek = dayOfWeek == 1 ? 7 : dayOfWeek - 1;
+
+                if (!airingDays.contains(dayOfWeek)) {
+                    airingDays.add(dayOfWeek);
+                }
+            }
+        }
+
+        Log.d(TAG, "Airing days: " + airingDays);
+
+        // Create and return the Anime object
+        Anime anime = new Anime(
+                media.getInt("id"),
+                title.getString("romaji"),
+                title.optString("english", ""),
+                coverImage.getString("large"),
+                episodes,
+                airingDays,
+                startCal.getTime(),
+                endCal.getTime()
+        );
+
+        // Update the airing status
+        anime.updateAiringStatus();
+
+        return anime;
+    }
+
     private void updateVisibility(boolean isSearching) {
         popularTitle.setVisibility(isSearching ? View.GONE : View.VISIBLE);
         popularRecyclerView.setVisibility(isSearching ? View.GONE : View.VISIBLE);
         searchResultsTitle.setVisibility(isSearching ? View.VISIBLE : View.GONE);
         recyclerView.setVisibility(isSearching ? View.VISIBLE : View.GONE);
     }
-
-    private void loadPopularAnime() {
-        OkHttpClient client = new OkHttpClient();
-
-        // GraphQL query for popular anime
-        RequestBody requestBody = new FormBody.Builder()
-                .add("query", "query { " +
-                        "Page(page: 1, perPage: 10) { " +
-                        "  media(sort: POPULARITY_DESC, type: ANIME) { " +  // Sort by popularity
-                        "    id " +
-                        "    title { " +
-                        "      romaji " +
-                        "      english " +
-                        "    } " +
-                        "    coverImage { " +
-                        "      large " +
-                        "    } " +
-                        "    episodes " +
-                        "  } " +
-                        "} " +
-                        "}")
-                .build();
-
-        Request request = new Request.Builder()
-                .url("https://graphql.anilist.co")
-                .post(requestBody)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Accept", "application/json")
-                .build();
-
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                runOnUiThread(() -> {
-                    Toast.makeText(SearchAnimeActivity.this,
-                            "Failed to load popular anime: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
-                });
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                try {
-                    String responseBody = response.body().string();
-                    JSONObject jsonObject = new JSONObject(responseBody);
-                    JSONArray mediaList = jsonObject
-                            .getJSONObject("data")
-                            .getJSONObject("Page")
-                            .getJSONArray("media");
-
-                    final List<Anime> popularResults = new ArrayList<>();
-                    for (int i = 0; i < mediaList.length(); i++) {
-                        JSONObject media = mediaList.getJSONObject(i);
-                        JSONObject title = media.getJSONObject("title");
-                        JSONObject coverImage = media.getJSONObject("coverImage");
-
-                        int episodes = media.isNull("episodes") ? 0 : media.getInt("episodes");
-
-                        Anime anime = new Anime(
-                                media.getInt("id"),
-                                title.getString("romaji"),
-                                title.optString("english", ""),
-                                coverImage.getString("large"),
-                                episodes
-                        );
-                        popularResults.add(anime);
-                    }
-
-                    runOnUiThread(() -> {
-                        popularAnimeList.clear();
-                        popularAnimeList.addAll(popularResults);
-                        popularAnimeAdapter.notifyDataSetChanged();
-                    });
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                    runOnUiThread(() -> {
-                        Toast.makeText(SearchAnimeActivity.this,
-                                "Error parsing popular anime results",
-                                Toast.LENGTH_SHORT).show();
-                    });
-                }
-            }
-        });
-    }
-
 }

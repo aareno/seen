@@ -30,6 +30,7 @@ public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdap
     private OnEpisodeChangeListener episodeChangeListener;
     private OnDeleteClickListener deleteClickListener;
 
+
     public interface OnWatchedButtonClickListener {
         void onWatchedButtonClick(Anime anime);
     }
@@ -75,6 +76,7 @@ public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdap
         ProgressBar progressBar;
         TextView progressText;
         ImageButton deleteButton;
+        TextView[] dayIndicators;
 
         ViewHolder(View itemView) {
             super(itemView);
@@ -86,6 +88,17 @@ public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdap
             progressBar = itemView.findViewById(R.id.progress_bar);
             progressText = itemView.findViewById(R.id.tv_progress_text);
             deleteButton = itemView.findViewById(R.id.btn_delete);
+
+            // Initialize day indicators array
+            dayIndicators = new TextView[]{
+                    itemView.findViewById(R.id.day_mon),
+                    itemView.findViewById(R.id.day_tue),
+                    itemView.findViewById(R.id.day_wed),
+                    itemView.findViewById(R.id.day_thu),
+                    itemView.findViewById(R.id.day_fri),
+                    itemView.findViewById(R.id.day_sat),
+                    itemView.findViewById(R.id.day_sun)
+            };
         }
 
         void bind(Anime currentAnime) {
@@ -134,6 +147,43 @@ public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdap
             progressBar.setMax(currentAnime.getEpisodeCount());
             progressBar.setProgress(currentAnime.getWatchedEpisodes());
             progressText.setText(currentAnime.getWatchedEpisodes() + "/" + currentAnime.getEpisodeCount());
+
+            updateDayIndicators(currentAnime);
         }
+
+        private void updateDayIndicators(Anime anime) {
+            // First, reset all indicators to inactive state
+            for (TextView dayIndicator : dayIndicators) {
+                dayIndicator.setSelected(false);
+                dayIndicator.setAlpha(0.5f);
+            }
+
+            // If the anime is ongoing, highlight the airing days
+            if (anime.getAiringDays() != null && !anime.getAiringDays().isEmpty()) {
+                for (Integer day : anime.getAiringDays()) {
+                    // Convert day to index (assuming 1 = Monday, 7 = Sunday)
+                    int index = day - 1;
+                    if (index >= 0 && index < dayIndicators.length) {
+                        TextView indicator = dayIndicators[index];
+
+                        switch (anime.getAiringStatus()) {
+                            case ONGOING:
+                                indicator.setSelected(true);
+                                indicator.setAlpha(1.0f);
+                                break;
+                            case FINISHED:
+                                indicator.setSelected(false);
+                                indicator.setAlpha(0.3f);
+                                break;
+                            case NOT_STARTED:
+                                indicator.setSelected(true);
+                                indicator.setAlpha(0.7f);
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
     }
 }

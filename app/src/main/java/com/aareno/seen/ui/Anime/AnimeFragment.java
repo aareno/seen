@@ -36,7 +36,6 @@ public class AnimeFragment extends Fragment {
     public interface UndoListener {
         void setUndoEnabled(boolean enabled);
     }
-
     private List<Anime> watchingList = new ArrayList<>();
     private List<Anime> watchedList = new ArrayList<>();
     private RecyclerView recyclerViewWatching;
@@ -202,6 +201,7 @@ public class AnimeFragment extends Fragment {
             @Override
             public void onDataLoaded(Long id) {
                 watchingList.add(anime);
+                originalWatchingList.add(anime);
                 updateCounts();
                 watchingAdapter.notifyDataSetChanged();
                 addToUndoStack(new UndoAction_anime(
