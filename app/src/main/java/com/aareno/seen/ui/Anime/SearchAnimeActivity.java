@@ -317,11 +317,13 @@ public class SearchAnimeActivity extends AppCompatActivity {
 
         // Create Calendar instances for dates
         Calendar startCal = Calendar.getInstance();
+        Log.d("SearchAnimeActivity", "Anime: " + title);
+        Log.d("SearchAnimeActivity", "StartDate : " + startDateObj.getInt("year") +" " + startDateObj.getInt("month"));
         if (!startDateObj.isNull("year")) {
             startCal.set(
                     startDateObj.getInt("year"),
                     startDateObj.getInt("month") - 1,
-                    startDateObj.getInt("day")
+                    1
             );
         }
 
@@ -330,7 +332,7 @@ public class SearchAnimeActivity extends AppCompatActivity {
             endCal.set(
                     endDateObj.getInt("year"),
                     endDateObj.getInt("month") - 1,
-                    endDateObj.getInt("day")
+                    1
             );
         }
 
