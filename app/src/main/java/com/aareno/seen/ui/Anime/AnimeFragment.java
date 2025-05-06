@@ -229,6 +229,31 @@ public class AnimeFragment extends Fragment {
         updateCounts();
     }
 
+    public void addAnimeToWatchedList(Anime anime) {
+        repository.insertAnime(anime, new AnimeRepository.OnDataLoadedCallback<Long>() {
+            @Override
+            public void onDataLoaded(Long id) {
+                watchedList.add(anime);
+                originalWatchedList.add(anime);
+                updateCounts();
+                watchedAdapter.notifyDataSetChanged();
+                /*
+                addToUndoStack(new UndoAction_anime(
+                        UndoAction_anime.ActionType.ADD_TO_WATCHED,
+                        anime,
+                        watchedList.size() - 1
+
+
+                ));
+                */
+            }
+            @Override
+            public void onError(Exception e) {
+                showErrorMessage("Failed to add anime");
+            }
+    });
+    }
+
     private void undoAddToWatching(Anime anime, int position) {
         repository.deleteAnime(anime, new AnimeRepository.OnDataLoadedCallback<Void>() {
             @Override

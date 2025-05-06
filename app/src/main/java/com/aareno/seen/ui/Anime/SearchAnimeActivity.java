@@ -314,7 +314,7 @@ public class SearchAnimeActivity extends AppCompatActivity {
     private Anime parseAnimeFromJson(JSONObject media) throws JSONException {
         JSONObject title = media.getJSONObject("title");
         JSONObject coverImage = media.getJSONObject("coverImage");
-        int episodes = media.isNull("episodes") ? 0 : media.getInt("episodes");
+        int episodes = media.isNull("episodes") ? 12 : media.getInt("episodes");
 
         // Parse dates
         JSONObject startDateObj = media.getJSONObject("startDate");

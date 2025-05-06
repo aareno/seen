@@ -157,8 +157,13 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                     ArrayList<Anime> selectedAnime = (ArrayList<Anime>) data.getSerializableExtra("selected_anime_list");
                     if (selectedAnime != null && currentFragment instanceof AnimeFragment) {
                         for (Anime anime : selectedAnime) {
-                            ((AnimeFragment) currentFragment).addAnimeToWatchingList(anime);
+                            if (anime.isWatching()) {
+                                ((AnimeFragment) currentFragment).addAnimeToWatchingList(anime);
+                            } else {
+                                ((AnimeFragment) currentFragment).addAnimeToWatchedList(anime);
+                            }
                         }
+
                     }
                     break;
 

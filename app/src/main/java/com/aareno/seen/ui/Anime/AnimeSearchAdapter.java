@@ -15,7 +15,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.aareno.seen.R;
 import com.bumptech.glide.Glide;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class AnimeSearchAdapter extends RecyclerView.Adapter<AnimeSearchAdapter.AnimeViewHolder> {
     private List<Anime> animeList;
@@ -100,6 +104,13 @@ public class AnimeSearchAdapter extends RecyclerView.Adapter<AnimeSearchAdapter.
                     })
                     .setNegativeButton("Cancel", null)
                     .show();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            try {
+                Date today = sdf.parse(sdf.format(new Date()));
+                anime.setFinishedDate(today);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
