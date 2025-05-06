@@ -3,6 +3,7 @@ package com.aareno.seen.data.KDrama;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import com.aareno.seen.data.Anime.AnimeRepository;
 import com.aareno.seen.ui.Anime.Anime;
@@ -106,11 +107,24 @@ public class KDramaRepository {
             try {
                 KDrama kdrama = database.kDramaDao().getKdramaById(kdramaId); // Fetch the existing KDrama
                 if (kdrama != null) {
-                    kdrama.setEpisodeCount(newEpisodeCount);
-                    database.kDramaDao().update(kdrama);
-                    new Handler(Looper.getMainLooper()).post(() ->
-                            callback.onDataLoaded(null)
-                    );
+                    int currentEpisodeCount = kdrama.getEpisodeCount();
+
+                    // Only update if the episode count has changed
+                    if (currentEpisodeCount != newEpisodeCount) {
+                        kdrama.setEpisodeCount(newEpisodeCount);
+                        database.kDramaDao().update(kdrama);
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            Log.d("KDramaRepository", "Updated episode count for KDrama ID: " + kdramaId +
+                                    " from " + currentEpisodeCount + " to " + newEpisodeCount);
+                            callback.onDataLoaded(null);
+                        });
+                    } else {
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            Log.d("KDramaRepository", "No update needed for KDrama ID: " + kdramaId +
+                                    " (episode count unchanged: " + newEpisodeCount + ")");
+                            callback.onDataLoaded(null);
+                        });
+                    }
                 } else {
                     new Handler(Looper.getMainLooper()).post(() ->
                             callback.onError(new Exception("KDrama not found"))

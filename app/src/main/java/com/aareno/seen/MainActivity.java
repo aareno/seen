@@ -65,6 +65,9 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         ColorStateList kdramaColors = createColorStateList(R.color.red);
         ColorStateList tvMoviesColors = createColorStateList(R.color.black);
 
+        applyTabVisibilitySettings();
+
+
         // Set the custom colors for the icons
         bottomNavigation.setItemIconTintList(null); // Remove default tint
         bottomNavigation.setItemTextColor(createColorStateList(R.color.gray));
@@ -106,6 +109,8 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
             return false;
         });
 
+        applyUserSettings();
+
         ImageButton btnAdd = findViewById(R.id.btn_add);
         if (btnAdd != null) {
             btnAdd.setOnClickListener(v -> {
@@ -126,10 +131,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         }
 
         if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, animeFragment)
-                    .commit();
-            bottomNavigation.setSelectedItemId(R.id.nav_anime);
+            loadInitialFragment();
         }
     }
 
@@ -368,20 +370,84 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         }
     }
 
-    private boolean isCurrentTabVisible() {
+    private void applyUserSettings() {
         SharedPreferences prefs = getSharedPreferences("AppSettings", MODE_PRIVATE);
-        int selectedItemId = bottomNavigation.getSelectedItemId();
-        Fragment currentFragment = getSupportFragmentManager()
-                .findFragmentById(R.id.fragment_container);
 
-        if (currentFragment instanceof AnimeFragment) {
-            return prefs.getBoolean("anime_tab_enabled", true);
-        } else if (currentFragment instanceof KDramaFragment) {
-            return prefs.getBoolean("kdrama_tab_enabled", true);
-        } else if (currentFragment instanceof TvMoviesFragment) {
-            return prefs.getBoolean("tvmovies_tab_enabled", true);
+        // Apply tab visibility settings
+        boolean animeEnabled = prefs.getBoolean("anime_tab_enabled", true);
+        boolean kdramaEnabled = prefs.getBoolean("kdrama_tab_enabled", true);
+        boolean tvMoviesEnabled = prefs.getBoolean("tvmovies_tab_enabled", true);
+
+        // Update the menu visibility
+        Menu menu = bottomNavigation.getMenu();
+        menu.findItem(NAV_ANIME).setVisible(animeEnabled);
+        menu.findItem(NAV_KDRAMA).setVisible(kdramaEnabled);
+        menu.findItem(NAV_TVMOVIES).setVisible(tvMoviesEnabled);
+
+        // Ensure we start with a valid tab selected
+        if (animeEnabled) {
+            // If Anime tab is enabled, use it as default
+            bottomNavigation.setSelectedItemId(NAV_ANIME);
+        } else if (kdramaEnabled) {
+            // Otherwise try KDrama
+            bottomNavigation.setSelectedItemId(NAV_KDRAMA);
+        } else if (tvMoviesEnabled) {
+            // Otherwise try TV/Movies
+            bottomNavigation.setSelectedItemId(NAV_TVMOVIES);
         }
-        return false;
+
+        // Apply other settings as needed
+        boolean notificationsEnabled = prefs.getBoolean("notifications_enabled", true);
+        // Apply notification settings if needed
+        if (notificationsEnabled) {
+            // Enable notifications logic
+        } else {
+            // Disable notifications logic
+        }
+    }
+
+    private void applyTabVisibilitySettings() {
+        SharedPreferences prefs = getSharedPreferences("AppSettings", MODE_PRIVATE);
+        boolean animeEnabled = prefs.getBoolean("anime_tab_enabled", true);
+        boolean kdramaEnabled = prefs.getBoolean("kdrama_tab_enabled", true);
+        boolean tvMoviesEnabled = prefs.getBoolean("tvmovies_tab_enabled", true);
+
+        // Update the menu visibility
+        Menu menu = bottomNavigation.getMenu();
+        menu.findItem(NAV_ANIME).setVisible(animeEnabled);
+        menu.findItem(NAV_KDRAMA).setVisible(kdramaEnabled);
+        menu.findItem(NAV_TVMOVIES).setVisible(tvMoviesEnabled);
+    }
+
+    private void loadInitialFragment() {
+        // Check which tabs are enabled
+        SharedPreferences prefs = getSharedPreferences("AppSettings", MODE_PRIVATE);
+        boolean animeEnabled = prefs.getBoolean("anime_tab_enabled", true);
+        boolean kdramaEnabled = prefs.getBoolean("kdrama_tab_enabled", true);
+        boolean tvMoviesEnabled = prefs.getBoolean("tvmovies_tab_enabled", true);
+
+        // Try to restore the last selected tab
+        int lastSelectedTab = prefs.getInt("last_selected_tab", -1);
+
+        // Check if last tab is valid and enabled
+        if (lastSelectedTab == NAV_ANIME && animeEnabled) {
+            bottomNavigation.setSelectedItemId(NAV_ANIME);
+        } else if (lastSelectedTab == NAV_KDRAMA && kdramaEnabled) {
+            bottomNavigation.setSelectedItemId(NAV_KDRAMA);
+        } else if (lastSelectedTab == NAV_TVMOVIES && tvMoviesEnabled) {
+            bottomNavigation.setSelectedItemId(NAV_TVMOVIES);
+        }
+        // If last tab is invalid or disabled, select the first enabled tab
+        else {
+            // Find the first enabled tab and set it
+            if (animeEnabled) {
+                bottomNavigation.setSelectedItemId(NAV_ANIME);
+            } else if (kdramaEnabled) {
+                bottomNavigation.setSelectedItemId(NAV_KDRAMA);
+            } else if (tvMoviesEnabled) {
+                bottomNavigation.setSelectedItemId(NAV_TVMOVIES);
+            }
+        }
     }
 
 }

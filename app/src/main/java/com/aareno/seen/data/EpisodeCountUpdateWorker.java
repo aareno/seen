@@ -9,7 +9,6 @@ import androidx.work.WorkerParameters;
 import com.aareno.seen.data.Anime.AnimeRepository;
 import com.aareno.seen.data.KDrama.KDramaRepository;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.json.JSONArray;
@@ -20,6 +19,8 @@ import okhttp3.*;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class EpisodeCountUpdateWorker extends Worker {
 
@@ -94,18 +95,53 @@ public class EpisodeCountUpdateWorker extends Worker {
     }
 
     private void fetchKdramaEpisodeCount(int showId) throws IOException {
-        String episodeUrl = "https://api.tvmaze.com/shows/" + showId + "/episodes";
+        String episodeUrl = TVMAZE_API_URL + showId + "/episodes";
 
         Request request = new Request.Builder().url(episodeUrl).get().build();
+        Response response = client.newCall(request).execute();
 
-        try (Response response = client.newCall(request).execute()) {
-            if (response.isSuccessful() && response.body() != null) {
-                String jsonResponse = response.body().string();
+        if (response.isSuccessful() && response.body() != null) {
+            String jsonResponse = response.body().string();
+            try {
+                JSONArray episodesArray = new JSONArray(jsonResponse);
+                int newEpisodeCount = episodesArray.length();
 
-                handleKdramaEpisodesResponse(jsonResponse, showId);
-            } else {
-                throw new IOException("Failed to fetch Kdrama data: " + response);
+                Log.d("EpisodeUpdateWorker", "Fetched episode count for KDrama ID: " + showId + ", New count: " + newEpisodeCount);
+
+                // Use a latch to make the worker wait for the repository operation
+                final CountDownLatch latch = new CountDownLatch(1);
+                final AtomicReference<Boolean> needsUpdate = new AtomicReference<>(false);
+
+                // Get current KDrama to check episode count
+                kDramaRepository.updateKdramaEpisodeCount(showId, newEpisodeCount, new KDramaRepository.OnDataLoadedCallback<Void>() {
+                    @Override
+                    public void onDataLoaded(Void data) {
+                        Log.d("EpisodeUpdateWorker", "Successfully checked/updated KDrama ID: " + showId);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        if (e.getMessage().contains("KDrama not found")) {
+                            Log.e("EpisodeUpdateWorker", "KDrama ID: " + showId + " not found in repository");
+                        } else {
+                            Log.e("EpisodeUpdateWorker", "Failed to update KDrama episode count: " + e.getMessage(), e);
+                        }
+                        latch.countDown();
+                    }
+                });
+
+                try {
+                    latch.await(); // Wait for the repository operation to complete
+                } catch (InterruptedException e) {
+                    Log.e("EpisodeUpdateWorker", "Repository operation interrupted", e);
+                }
+
+            } catch (JSONException e) {
+                Log.e("EpisodeUpdateWorker", "Error parsing Kdrama episodes JSON: " + e.getMessage(), e);
             }
+        } else {
+            throw new IOException("Failed to fetch Kdrama data: " + response);
         }
     }
 
@@ -115,49 +151,20 @@ public class EpisodeCountUpdateWorker extends Worker {
         JsonObject media = data.getAsJsonObject("Media");
 
         if (media != null) {
-            int episodeCount = media.get("episodes").getAsInt();
+            int newEpisodeCount = media.get("episodes").getAsInt();
             String title = media.getAsJsonObject("title").get("romaji").getAsString();
-            System.out.println("Anime: " + title + ", Episode Count: " + episodeCount);
+            Log.d("EpisodeUpdateWorker", "Anime: " + title + ", New Episode Count: " + newEpisodeCount);
+
             // Update your local data storage or UI as needed
-            updateAnimeEpisodeCountInRepository(title, episodeCount);
+            updateAnimeEpisodeCountInRepository(title, newEpisodeCount);
         }
     }
 
-    private void handleKdramaEpisodesResponse(String jsonResponse, int showId) {
-        try {
-            // The TVmaze /episodes endpoint should return an array
-            JSONArray episodesArray = new JSONArray(jsonResponse);
-            int episodeCount = episodesArray.length();
-
-            Log.d("EpisodeUpdateWorker", "Kdrama ID: " + showId + ", Episode Count: " + episodeCount);
-
-            // Update or store episode count in local data storage
-            updateKdramaEpisodeCountInRepository(showId, episodeCount);
-
-        } catch (JSONException e) {
-            Log.e("EpisodeUpdateWorker", "Error parsing Kdrama episodes JSON: " + e.getMessage(), e);
-        }
-    }
-
-    private void updateKdramaEpisodeCountInRepository(int showId, int episodeCount) {
-        kDramaRepository.updateKdramaEpisodeCount(showId, episodeCount, new KDramaRepository.OnDataLoadedCallback<Void>() {
+    private void updateAnimeEpisodeCountInRepository(String showId, int newEpisodeCount) {
+        animeRepository.updateAnimeEpisodeCount(showId, newEpisodeCount, new AnimeRepository.OnDataLoadedCallback<Void>() {
             @Override
             public void onDataLoaded(Void data) {
-                Log.d("EpisodeUpdateWorker", "Successfully updated KDrama ID: " + showId + " with new episode count: " + episodeCount);
-            }
-
-            @Override
-            public void onError(Exception e) {
-                Log.e("EpisodeUpdateWorker", "Failed to update KDrama episode count: " + e.getMessage(), e);
-            }
-        });
-    }
-
-    private void updateAnimeEpisodeCountInRepository(String showId, int episodeCount) {
-        animeRepository.updateAnimeEpisodeCount(showId, episodeCount, new AnimeRepository.OnDataLoadedCallback<Void>() {
-            @Override
-            public void onDataLoaded(Void data) {
-                Log.d("EpisodeUpdateWorker", "Successfully updated Anime: " + showId + " with new episode count: " + episodeCount);
+                Log.d("EpisodeUpdateWorker", "Successfully updated Anime: " + showId + " with new episode count: " + newEpisodeCount);
             }
 
             @Override
@@ -166,5 +173,4 @@ public class EpisodeCountUpdateWorker extends Worker {
             }
         });
     }
-
 }
