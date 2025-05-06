@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="?android:attr/windowBackground">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Settings"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="?android:attr/textColorPrimary"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Tab Selection -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Visible Tabs"
+        android:textSize="18sp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:layout_marginTop="16dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select at least one tab"
+        android:textSize="12sp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:layout_marginBottom="8dp"/>
+
+    <CheckBox
+        android:id="@+id/animeTabCheckbox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Anime"
+        android:checked="true"
+        android:buttonTint="@color/blue"
+        android:textColor="?android:attr/textColorPrimary"/>
+
+    <CheckBox
+        android:id="@+id/kdramaTabCheckbox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="K-Drama"
+        android:checked="true"
+        android:buttonTint="@color/blue"
+        android:textColor="?android:attr/textColorPrimary"/>
+
+    <CheckBox
+        android:id="@+id/tvMoviesTabCheckbox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="TV/Movies"
+        android:checked="true"
+        android:buttonTint="@color/blue"
+        android:textColor="?android:attr/textColorPrimary"/>
+
+    <!-- Notification Settings -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Notifications"
+        android:textSize="18sp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:layout_marginTop="24dp"/>
+
+    <Switch
+        android:id="@+id/notificationsSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Enable Notifications"
+        android:textColor="?android:attr/textColorPrimary"
+        android:thumbTint="@color/blue"
+        android:trackTint="@color/gray"
+        android:layout_marginTop="8dp"/>
+
+    <!-- Version Info -->
+    <TextView
+        android:id="@+id/versionInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:text="Version 1.0"/>
+
+</LinearLayout>

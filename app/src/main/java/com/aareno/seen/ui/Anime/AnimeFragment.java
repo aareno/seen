@@ -116,6 +116,10 @@ public class AnimeFragment extends Fragment {
         repository.getWatchingAnime(new AnimeRepository.OnDataLoadedCallback<List<Anime>>() {
             @Override
             public void onDataLoaded(List<Anime> watchingAnime) {
+                if (!isAdded()) {
+                    Log.d("AnimeFragment", "Fragment not attached during callback");
+                    return;
+                }
                 originalWatchingList.clear();
                 originalWatchingList.addAll(watchingAnime);
                 watchingList.clear();
@@ -152,6 +156,10 @@ public class AnimeFragment extends Fragment {
     }
 
     private void scheduleUpdatesForAllOngoingAnimes() {
+        if (!isAdded()) {
+            Log.d("AnimeFragment", "Fragment not attached, skipping updates");
+            return;
+        }
         for (Anime anime : watchingList) {
             if (anime.getAiringStatus() == Anime.AiringStatus.ONGOING) {
                 WorkScheduler.schedulePeriodicUpdate(requireContext(), anime.getId(), "anime");

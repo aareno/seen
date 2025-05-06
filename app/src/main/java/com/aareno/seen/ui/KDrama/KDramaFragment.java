@@ -118,6 +118,10 @@ public class KDramaFragment extends Fragment {
 
             @Override
             public void onDataLoaded(List<KDrama> watchingKDrama) {
+                if (!isAdded()) {
+                    Log.d("KDrama", "Fragment not attached during callback");
+                    return;
+                }
                 originalWatchingList.clear();
                 originalWatchingList.addAll(watchingKDrama);
                 watchingList.clear();
@@ -154,6 +158,10 @@ public class KDramaFragment extends Fragment {
     }
 
     private void scheduleUpdatesForAllOngoingAnimes() {
+        if (!isAdded()) {
+            Log.d("KDramaFragment", "Fragment not attached during callback");
+            return;
+        }
         for (KDrama kdrama : watchingList) {
             if (kdrama.getAiringStatus() == Anime.AiringStatus.ONGOING) {
                 WorkScheduler.schedulePeriodicUpdate(requireContext(), kdrama.getId(), "kdrama");
