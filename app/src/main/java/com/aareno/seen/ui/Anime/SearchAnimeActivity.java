@@ -339,7 +339,12 @@ public class SearchAnimeActivity extends AppCompatActivity {
                     endDateObj.getInt("month") - 1,
                     1
             );
+        } else {
+            endCal.setTime(startCal.getTime()); // Copy startCal date
+            endCal.add(Calendar.WEEK_OF_YEAR, 12); // Add 12 weeks
         }
+
+        Log.d(TAG, "End date: " + endCal.getTime());
 
         // Parse airing schedule
         List<Integer> airingDays = new ArrayList<>();
