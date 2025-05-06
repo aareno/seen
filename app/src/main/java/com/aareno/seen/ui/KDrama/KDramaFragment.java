@@ -54,6 +54,7 @@ public class KDramaFragment extends Fragment {
 
     public interface UndoListener {
         void setUndoEnabled(boolean enabled);
+        void updateUndoButton(boolean hasItems);
     }
 
     @Override
@@ -75,6 +76,8 @@ public class KDramaFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_kdrama, container, false);
+
+        undoListener.updateUndoButton(!undoStack.isEmpty());
 
         recyclerViewWatching = view.findViewById(R.id.recycler_view_watching);
         recyclerViewWatched = view.findViewById(R.id.recycler_view_watched);
@@ -424,7 +427,9 @@ public class KDramaFragment extends Fragment {
             }
 
             if (undoListener != null) {
-                undoListener.setUndoEnabled(!undoStack.isEmpty());
+                boolean hasItems = !undoStack.isEmpty();
+                undoListener.setUndoEnabled(hasItems);
+                undoListener.updateUndoButton(hasItems);
             }
         }
     }
@@ -438,6 +443,7 @@ public class KDramaFragment extends Fragment {
         undoStack.push(action);
         if (undoListener != null) {
             undoListener.setUndoEnabled(true);
+            undoListener.updateUndoButton(true);
         }
     }
 

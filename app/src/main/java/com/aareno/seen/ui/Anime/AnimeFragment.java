@@ -38,6 +38,7 @@ public class AnimeFragment extends Fragment {
     // Interface for undo functionality
     public interface UndoListener {
         void setUndoEnabled(boolean enabled);
+        void updateUndoButton(boolean hasItems);
     }
     private List<Anime> watchingList = new ArrayList<>();
     private List<Anime> watchedList = new ArrayList<>();
@@ -74,6 +75,8 @@ public class AnimeFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_anime, container, false);
+
+        undoListener.updateUndoButton(!undoStack.isEmpty());
 
         recyclerViewWatching = view.findViewById(R.id.recycler_view_watching);
         recyclerViewWatched = view.findViewById(R.id.recycler_view_watched);
@@ -187,6 +190,7 @@ public class AnimeFragment extends Fragment {
         undoStack.push(action);
         if (undoListener != null) {
             undoListener.setUndoEnabled(true);
+            undoListener.updateUndoButton(true);
         }
     }
 
@@ -213,7 +217,9 @@ public class AnimeFragment extends Fragment {
             }
 
             if (undoListener != null) {
-                undoListener.setUndoEnabled(!undoStack.isEmpty());
+                boolean hasItems = !undoStack.isEmpty();
+                undoListener.setUndoEnabled(hasItems);
+                undoListener.updateUndoButton(hasItems);
             }
         }
         updateCounts();

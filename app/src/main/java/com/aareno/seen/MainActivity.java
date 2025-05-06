@@ -26,10 +26,11 @@ import com.aareno.seen.ui.TvMovies.SearchShowActivity;
 import com.aareno.seen.ui.TvMovies.Show;
 import com.aareno.seen.ui.TvMovies.TvMoviesFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.color.MaterialColors;
 
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements AnimeFragment.UndoListener {
+public class MainActivity extends AppCompatActivity implements AnimeFragment.UndoListener, KDramaFragment.UndoListener, TvMoviesFragment.UndoListener {
     private static final int SEARCH_ANIME_REQUEST_CODE = 1001;
     private static final int SEARCH_KDRAMA_REQUEST_CODE = 1002;
     private static final int SEARCH_TVMOVIES_REQUEST_CODE = 1003;
@@ -447,6 +448,25 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
             } else if (tvMoviesEnabled) {
                 bottomNavigation.setSelectedItemId(NAV_TVMOVIES);
             }
+        }
+    }
+
+    @Override
+    public void updateUndoButton(boolean hasItems) {
+        // Update both enabled state and appearance
+        undoButton.setEnabled(hasItems);
+        if (hasItems) {
+            undoButton.setAlpha(1.0f);
+            // Optional: You can also change the background tint or image tint
+            undoButton.setImageTintList(ColorStateList.valueOf(
+                    MaterialColors.getColor(undoButton, com.google.android.material.R.attr.colorOnPrimary)
+            ));
+        } else {
+            undoButton.setAlpha(0.5f);
+            // Optional: Change to a duller color when disabled
+            undoButton.setImageTintList(ColorStateList.valueOf(
+                    MaterialColors.getColor(undoButton, com.google.android.material.R.attr.colorOnPrimary)
+            ));
         }
     }
 
