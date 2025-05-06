@@ -1,8 +1,7 @@
-package com.aareno.seen.ui.KDrama;
+package com.aareno.seen.ui.TvMovies;
 
 import android.app.AlertDialog;
 import android.content.Context;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,7 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aareno.seen.R;
-import com.aareno.seen.ui.Anime.Anime;
+import com.aareno.seen.ui.KDrama.KDrama;
 import com.bumptech.glide.Glide;
 
 import java.text.ParseException;
@@ -24,46 +23,46 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class KDramaSearchAdapter extends RecyclerView.Adapter<KDramaSearchAdapter.KDramaViewHolder> {
-    private List<KDrama> kDramaList;
+public class ShowSearchAdapter extends RecyclerView.Adapter<ShowSearchAdapter.ShowViewHolder> {
+    private List<Show> showList;
     private OnItemClickListener listener;
 
     public interface OnItemClickListener {
-        void onAddToListClick(KDrama kdrama, String listType); // listType = "Watching" or "Watched"
+        void onAddToListClick(Show show, String listType); // listType = "Watching" or "Watched"
     }
 
-    public KDramaSearchAdapter(List<KDrama> kDramaList, OnItemClickListener listener) {
-        this.kDramaList = kDramaList;
+    public ShowSearchAdapter(List<Show> showList, ShowSearchAdapter.OnItemClickListener listener) {
+        this.showList = showList;
         this.listener = listener;
     }
 
     @NonNull
     @Override
-    public KDramaViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ShowViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_anime_search, parent, false);
-        return new KDramaViewHolder(view, listener);
+        return new ShowViewHolder(view, listener);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull KDramaViewHolder holder, int position) {
-        KDrama kdrama = kDramaList.get(position);
+    public void onBindViewHolder(@NonNull ShowViewHolder holder, int position) {
+        Show kdrama = showList.get(position);
         holder.bind(kdrama);
     }
 
     @Override
     public int getItemCount() {
-        return kDramaList.size();
+        return showList.size();
     }
 
-    static class KDramaViewHolder extends RecyclerView.ViewHolder {
+    static class ShowViewHolder extends RecyclerView.ViewHolder {
         TextView titleTextView;
         ImageView coverImageView;
         Button addToWatchingButton;
         private OnItemClickListener listener;
-        private KDrama currentKDrama;
+        private Show currentKDrama;
 
-        public KDramaViewHolder(@NonNull View itemView, OnItemClickListener listener) {
+        public ShowViewHolder(@NonNull View itemView, OnItemClickListener listener) {
             super(itemView);
             this.listener = listener;
 
@@ -79,7 +78,7 @@ public class KDramaSearchAdapter extends RecyclerView.Adapter<KDramaSearchAdapte
             });
         }
 
-        public void bind(KDrama kdrama) {
+        public void bind(Show kdrama) {
             currentKDrama = kdrama;
             titleTextView.setText(kdrama.getTitleEnglish());
             // Load image with Glide
@@ -88,9 +87,9 @@ public class KDramaSearchAdapter extends RecyclerView.Adapter<KDramaSearchAdapte
                         .load(kdrama.getCoverImageUrl())
                         .into(coverImageView);
             }
-            }
+        }
 
-        private void showAddDialog(Context context, KDrama kdrama) {
+        private void showAddDialog(Context context, Show kdrama) {
             final String[] options = {"Watching", "Watched"};
             final int[] selectedIndex = {0}; // default to "Watching"
 
@@ -127,5 +126,7 @@ public class KDramaSearchAdapter extends RecyclerView.Adapter<KDramaSearchAdapte
             return typedValue.data;
         }
 
-        }
+
     }
+}
+

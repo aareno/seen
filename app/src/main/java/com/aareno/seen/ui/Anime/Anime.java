@@ -85,7 +85,6 @@ public class Anime implements Serializable {
     public void markAsFinished() {
         this.finishedDate = new Date(); // Current date
         this.isWatching = false; // Mark as not watching when finished
-        this.airingStatus = AiringStatus.FINISHED;
     }
     public Date getFinishedDate() {return finishedDate;}
     public void setFinishedDate(Date finishedDate) {this.finishedDate = finishedDate;}

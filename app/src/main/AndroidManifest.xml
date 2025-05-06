@@ -25,6 +25,9 @@
         <activity
             android:name=".ui.KDrama.SearchKDramaActivity"
             android:exported="false"/>
+        <activity
+            android:name=".ui.TvMovies.SearchShowActivity"
+            android:exported="false"/>
 
         <!-- Main Activity - This is the entry point of your app -->
         <activity

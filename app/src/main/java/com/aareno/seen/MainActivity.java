@@ -19,6 +19,8 @@ import com.aareno.seen.ui.Anime.SearchAnimeActivity;
 import com.aareno.seen.ui.KDrama.KDrama;
 import com.aareno.seen.ui.KDrama.KDramaFragment;
 import com.aareno.seen.ui.KDrama.SearchKDramaActivity;
+import com.aareno.seen.ui.TvMovies.SearchShowActivity;
+import com.aareno.seen.ui.TvMovies.Show;
 import com.aareno.seen.ui.TvMovies.TvMoviesFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -30,6 +32,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
     private static final int SEARCH_TVMOVIES_REQUEST_CODE = 1003;
     private AnimeFragment animeFragment;
     private KDramaFragment kdramaFragment;
+    private TvMoviesFragment TvMoviesFragment;
     private ImageButton undoButton;
 
     @Override
@@ -40,6 +43,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         // Initialize fragments
         animeFragment = new AnimeFragment();
         kdramaFragment = new KDramaFragment();
+        TvMoviesFragment = new TvMoviesFragment();
 
         // Initialize undo button
         undoButton = findViewById(R.id.btn_undo);
@@ -51,6 +55,8 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
             } else if (currentFragment instanceof KDramaFragment) {
                 Log.d("MainActivity", "Performing undo on KDramaFragment");
                 kdramaFragment.performUndo();
+            } else if (currentFragment instanceof TvMoviesFragment) {
+                TvMoviesFragment.performUndo();
             }
         });
         undoButton.setEnabled(false);
@@ -78,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                 selectedFragment = kdramaFragment;
                 bottomNavigation.setItemIconTintList(kdramaColors);
             } else if (itemId == R.id.nav_tv_movies) {
-                selectedFragment = new TvMoviesFragment();
+                selectedFragment = TvMoviesFragment;
                 bottomNavigation.setItemIconTintList(tvMoviesColors);
             }
 
@@ -88,14 +94,10 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                         .commit();
 
                 // Show undo button for fragments that support undo
-                boolean supportsUndo = (selectedFragment instanceof AnimeFragment) ||
-                        (selectedFragment instanceof KDramaFragment);
-                undoButton.setVisibility(supportsUndo ? View.VISIBLE : View.GONE);
+                undoButton.setVisibility(View.VISIBLE);
 
-                if (supportsUndo) {
-                    undoButton.setEnabled(true);
-                    Log.d("MainActivity", "Undo button enabled: true");
-                }
+                undoButton.setEnabled(true);
+                Log.d("MainActivity", "Undo button enabled: true");
 
                 return true;
             }
@@ -115,7 +117,8 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                 Intent intent = new Intent(MainActivity.this, SearchKDramaActivity.class);
                 startActivityForResult(intent, SEARCH_KDRAMA_REQUEST_CODE);
             } else if (currentFragment instanceof TvMoviesFragment) {
-                Toast.makeText(this, "TV/Movies search not implemented", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(MainActivity.this, SearchShowActivity.class);
+                startActivityForResult(intent, SEARCH_TVMOVIES_REQUEST_CODE);
             }
         });
 
@@ -179,6 +182,19 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                         }
                     }
                     break;
+
+                case SEARCH_TVMOVIES_REQUEST_CODE:
+                    ArrayList<Show> selectedTvMovies = (ArrayList<Show>) data.getSerializableExtra("selected_show_list");
+                    if (selectedTvMovies != null && currentFragment instanceof TvMoviesFragment) {
+                        for (Show show : selectedTvMovies) {
+                            if (show.isWatching()) {
+                                ((TvMoviesFragment) currentFragment).addShowToWatchingList(show);
+                            } else {
+                                ((TvMoviesFragment) currentFragment).addShowToWatchedList(show);
+                            }
+                            }
+                    }
+
             }
         }
     }

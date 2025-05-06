@@ -1,4 +1,5 @@
-package com.aareno.seen.ui.KDrama;
+package com.aareno.seen.ui.TvMovies;
+
 
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -20,32 +21,31 @@ import com.bumptech.glide.Glide;
 
 import java.util.Date;
 import java.util.List;
-
-public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAdapter.ViewHolder> {
+public class WatchingShowAdapter extends RecyclerView.Adapter<WatchingShowAdapter.ViewHolder> {
 
     private Context context;
-    private List<KDrama> kDramaList;
+    private List<Show> showList;
     private OnWatchedButtonClickListener watchedButtonClickListener;
     private OnEpisodeChangeListener episodeChangeListener;
     private OnDeleteClickListener deleteClickListener;
 
     public interface OnWatchedButtonClickListener {
-        void onWatchedButtonClick(KDrama kdrama);
+        void onWatchedButtonClick(Show show);
     }
 
     public interface OnEpisodeChangeListener {
-        void onEpisodeChanged(KDrama kdrama);
+        void onEpisodeChanged(Show show);
     }
 
     public interface OnDeleteClickListener {
-        void onDeleteClick(KDrama kdrama);
+        void onDeleteClick(Show show);
     }
 
-    public WatchingKDramaAdapter(Context context, List<KDrama> kDramaList,
+    public WatchingShowAdapter(Context context, List<Show> showList,
                                  OnWatchedButtonClickListener listener,
-                                 OnEpisodeChangeListener episodeChangeListener, OnDeleteClickListener deleteClickListener) {
+                               OnEpisodeChangeListener episodeChangeListener, OnDeleteClickListener deleteClickListener) {
         this.context = context;
-        this.kDramaList = kDramaList;
+        this.showList = showList;
         this.watchedButtonClickListener = listener;
         this.episodeChangeListener = episodeChangeListener;
         this.deleteClickListener = deleteClickListener;
@@ -59,14 +59,14 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        KDrama currentKDrama = kDramaList.get(position);
-        holder.bind(currentKDrama);
+    public void onBindViewHolder(@NonNull WatchingShowAdapter.ViewHolder holder, int position) {
+        Show currentShow = showList.get(position);
+        holder.bind(currentShow);
     }
 
     @Override
     public int getItemCount() {
-        return kDramaList.size();
+        return showList.size();
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {
@@ -104,15 +104,15 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
             };
         }
 
-        void bind(KDrama currentKDrama) {
+        void bind(Show currentShow) {
             // Set English title
-            titleEnglishTextView.setText(currentKDrama.getTitleEnglish());
+            titleEnglishTextView.setText(currentShow.getTitleEnglish());
 
             // Set episode count
-            episodesTextView.setText("Episode: " + currentKDrama.getWatchedEpisodes());
+            episodesTextView.setText("Episode: " + currentShow.getWatchedEpisodes());
 
             // Check episode count here to maintain button state
-            if (currentKDrama.getWatchedEpisodes() == currentKDrama.getEpisodeCount()) {
+            if (currentShow.getWatchedEpisodes() == currentShow.getEpisodeCount()) {
                 incrementButton.setBackgroundTintList(ColorStateList.valueOf(context.getColor(R.color.green)));
                 incrementButton.setText("✔ ");
             } else {
@@ -121,35 +121,35 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
             }
 
             // Load cover image
-            if (!currentKDrama.getCoverImageUrl().isEmpty()) {
+            if (!currentShow.getCoverImageUrl().isEmpty()) {
                 Glide.with(context)
-                        .load(currentKDrama.getCoverImageUrl())
+                        .load(currentShow.getCoverImageUrl())
                         .into(coverImageView);
             }
 
             // Click listener remains the same
             incrementButton.setOnClickListener(v -> {
-                if (currentKDrama.getWatchedEpisodes() < currentKDrama.getEpisodeCount()) {
-                    if (currentKDrama.getWatchedEpisodes() == currentKDrama.getEpisodeCount() - 1) {
+                if (currentShow.getWatchedEpisodes() < currentShow.getEpisodeCount()) {
+                    if (currentShow.getWatchedEpisodes() == currentShow.getEpisodeCount() - 1) {
                         incrementButton.setBackgroundTintList(ColorStateList.valueOf(context.getColor(R.color.green)));
                         incrementButton.setText("✔ ");
                     }
 
-                    currentKDrama.incrementEpisodes();
-                    episodeChangeListener.onEpisodeChanged(currentKDrama);
+                    currentShow.incrementEpisodes();
+                    episodeChangeListener.onEpisodeChanged(currentShow);
                     notifyItemChanged(getAdapterPosition());
                 } else {
-                    watchedButtonClickListener.onWatchedButtonClick(currentKDrama);
+                    watchedButtonClickListener.onWatchedButtonClick(currentShow);
                 }
             });
 
             // Decrement episode count
             decrementButton.setOnClickListener(v -> {
-                int currentEpisodes = currentKDrama.getWatchedEpisodes();
+                int currentEpisodes = currentShow.getWatchedEpisodes();
                 if (currentEpisodes > 0) {
-                    currentKDrama.setWatchedEpisodes(currentEpisodes - 1);
+                    currentShow.setWatchedEpisodes(currentEpisodes - 1);
                     notifyItemChanged(getAdapterPosition());
-                    episodeChangeListener.onEpisodeChanged(currentKDrama);
+                    episodeChangeListener.onEpisodeChanged(currentShow);
                 }
             });
 
@@ -157,19 +157,19 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
             // Add delete button click listener
             deleteButton.setOnClickListener(v -> {
                 if (deleteClickListener != null) {
-                    deleteClickListener.onDeleteClick(currentKDrama);
+                    deleteClickListener.onDeleteClick(currentShow);
                 }
             });
 
-            progressBar.setMax(currentKDrama.getEpisodeCount());
-            progressBar.setProgress(currentKDrama.getWatchedEpisodes());
-            progressText.setText(currentKDrama.getWatchedEpisodes() + "/" + currentKDrama.getEpisodeCount());
+            progressBar.setMax(currentShow.getEpisodeCount());
+            progressBar.setProgress(currentShow.getWatchedEpisodes());
+            progressText.setText(currentShow.getWatchedEpisodes() + "/" + currentShow.getEpisodeCount());
 
 
-            updateDayIndicators(currentKDrama);
+            updateDayIndicators(currentShow);
         }
 
-        private void updateDayIndicators(KDrama kdrama) {
+        private void updateDayIndicators(Show Show) {
             // First, reset all indicators to inactive state
             for (TextView dayIndicator : dayIndicators) {
                 dayIndicator.setSelected(false);
@@ -177,20 +177,20 @@ public class WatchingKDramaAdapter extends RecyclerView.Adapter<WatchingKDramaAd
             }
             // Check if the anime is past its end date
             Date currentDate = new Date();
-            if (kdrama.getEndDate() != null && currentDate.after(kdrama.getEndDate())) {
+            if (Show.getEndDate() != null && currentDate.after(Show.getEndDate())) {
                 // Switch status to FINISHED if the end date has passed
-                kdrama.setAiringStatus(Anime.AiringStatus.FINISHED);
+                Show.setAiringStatus(Anime.AiringStatus.FINISHED);
             }
 
             // Now update indicators based on the current airing status
-            if (kdrama.getAiringDays() != null && !kdrama.getAiringDays().isEmpty()) {
-                for (Integer day : kdrama.getAiringDays()) {
+            if (Show.getAiringDays() != null && !Show.getAiringDays().isEmpty()) {
+                for (Integer day : Show.getAiringDays()) {
                     // Convert day to index (assuming 1 = Monday, 7 = Sunday)
                     int index = day - 1;
                     if (index >= 0 && index < dayIndicators.length) {
                         TextView indicator = dayIndicators[index];
 
-                        switch (kdrama.getAiringStatus()) {
+                        switch (Show.getAiringStatus()) {
                             case ONGOING:
                                 indicator.setSelected(true);
                                 indicator.setAlpha(1.0f);

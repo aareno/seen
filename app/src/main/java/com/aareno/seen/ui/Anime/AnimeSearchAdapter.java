@@ -2,6 +2,7 @@ package com.aareno.seen.ui.Anime;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -102,8 +103,17 @@ public class AnimeSearchAdapter extends RecyclerView.Adapter<AnimeSearchAdapter.
                         String chosen = options[selectedIndex[0]];
                         listener.onAddToListClick(anime, chosen);
                     })
-                    .setNegativeButton("Cancel", null)
-                    .show();
+                    .setNegativeButton("Cancel", null);
+
+            AlertDialog dialog = builder.create();
+            dialog.setOnShowListener(d -> {
+                int colorOnPrimary = resolveThemeAttr(context, com.google.android.material.R.attr.colorOnPrimary);
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(colorOnPrimary);
+                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(colorOnPrimary);
+            });
+
+            dialog.show();
+
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
             try {
                 Date today = sdf.parse(sdf.format(new Date()));
@@ -112,5 +122,12 @@ public class AnimeSearchAdapter extends RecyclerView.Adapter<AnimeSearchAdapter.
                 e.printStackTrace();
             }
         }
+
+        private int resolveThemeAttr(Context context, int attr) {
+            TypedValue typedValue = new TypedValue();
+            context.getTheme().resolveAttribute(attr, typedValue, true);
+            return typedValue.data;
+        }
+
     }
 }

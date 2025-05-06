@@ -1,4 +1,4 @@
-package com.aareno.seen.ui.KDrama;
+package com.aareno.seen.ui.TvMovies;
 
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
@@ -12,15 +12,15 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
-@Entity(tableName = "kdrama")
+@Entity(tableName = "show")
 @TypeConverters({DateConverter.class, ListConverter.class})
-public class KDrama implements Serializable {
+public class Show implements Serializable {
 
     @PrimaryKey
     private int id;
     private Date finishedDate;
     private String titleEnglish;
-    private String titleKorean;
+    private String titleAlt;
     private String coverImageUrl;
     private int watchedEpisodes;
     private boolean isWatching;
@@ -31,12 +31,12 @@ public class KDrama implements Serializable {
     private Date endDate;
     private Anime.AiringStatus airingStatus;
 
-    public KDrama() {}
+    public Show() {}
 
-    public KDrama(int id, String titleEnglish, String titleKorean, String coverImageUrl, List<Integer> airingDays, Date startDate, Date endDate) {
+    public Show(int id, String titleEnglish, String titleAlt, String coverImageUrl, List<Integer> airingDays, Date startDate, Date endDate) {
         this.id = id;
         this.titleEnglish = titleEnglish != null ? titleEnglish : "";
-        this.titleKorean = titleKorean != null ? titleKorean : "";
+        this.titleAlt = titleAlt != null ? titleAlt : "";
         this.coverImageUrl = coverImageUrl != null ? coverImageUrl : "";
         this.watchedEpisodes = 0;
         this.isWatching = true;
@@ -50,8 +50,8 @@ public class KDrama implements Serializable {
     public void setId(int id) { this.id = id; }
     public void setTitleEnglish(String titleEnglish) { this.titleEnglish = titleEnglish; }
     public String getTitleEnglish() { return titleEnglish; }
-    public void setTitleKorean(String titleKorean) { this.titleKorean = titleKorean; }
-    public String getTitleKorean() { return titleKorean; }
+    public void setTitleAlt(String titleKorean) { this.titleAlt = titleAlt; }
+    public String getTitleAlt() { return titleAlt; }
     public String getCoverImageUrl() {return coverImageUrl != null ? coverImageUrl : ""; }
     public void setCoverImageUrl(String coverImageUrl) { this.coverImageUrl = coverImageUrl; }
     public int getWatchedEpisodes() {
@@ -90,15 +90,15 @@ public class KDrama implements Serializable {
 
     public int getEpisodeCount() {
         return episodeCount;
-}
+    }
 
     // Equals and HashCode for proper comparison
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        KDrama kdrama = (KDrama) o;
-        return id == kdrama.id;
+        Show show = (Show) o;
+        return id == show.id;
     }
 
     @Override
@@ -146,3 +146,4 @@ public class KDrama implements Serializable {
         return airingDays != null && airingDays.contains(day);
     }
 }
+
