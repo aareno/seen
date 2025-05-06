@@ -5,7 +5,8 @@ public class UndoAction_anime {
         ADD_TO_WATCHING,
         REMOVE_FROM_WATCHED,
         MOVE_TO_WATCHED,
-        REMOVE_FROM_WATCHING
+        REMOVE_FROM_WATCHING,
+        ADD_TO_WATCHED
     }
 
     private ActionType type;

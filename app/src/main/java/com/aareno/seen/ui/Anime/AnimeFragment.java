@@ -24,7 +24,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.aareno.seen.R;
 import com.aareno.seen.data.Anime.AnimeRepository;
+import com.aareno.seen.data.KDrama.KDramaRepository;
 import com.aareno.seen.data.WorkScheduler;
+import com.aareno.seen.ui.KDrama.KDrama;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -197,6 +199,9 @@ public class AnimeFragment extends Fragment {
                 case REMOVE_FROM_WATCHING:
                     undoRemoveFromWatching(action.getAnime(), action.getPosition());
                     break;
+                case ADD_TO_WATCHED:
+                    undoAddToWatched(action.getAnime(), action.getPosition());
+                    break;
             }
 
             if (undoListener != null) {
@@ -237,7 +242,6 @@ public class AnimeFragment extends Fragment {
                 originalWatchedList.add(anime);
                 updateCounts();
                 watchedAdapter.notifyDataSetChanged();
-                /*
                 addToUndoStack(new UndoAction_anime(
                         UndoAction_anime.ActionType.ADD_TO_WATCHED,
                         anime,
@@ -245,13 +249,28 @@ public class AnimeFragment extends Fragment {
 
 
                 ));
-                */
             }
             @Override
             public void onError(Exception e) {
                 showErrorMessage("Failed to add anime");
             }
     });
+    }
+
+    private void undoAddToWatched(Anime anime, int originalPosition) {
+        repository.deleteAnime(anime, new AnimeRepository.OnDataLoadedCallback<Void>() {
+            @Override
+            public void onDataLoaded(Void data) {
+                watchedList.remove(originalPosition);
+                updateCounts();
+                watchedAdapter.notifyDataSetChanged();
+            }
+            @Override
+            public void onError(Exception e) {
+                showErrorMessage("Failed to undo add anime");
+            }
+
+        });
     }
 
     private void undoAddToWatching(Anime anime, int position) {

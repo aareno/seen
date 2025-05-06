@@ -63,6 +63,7 @@ public class KDramaFragment extends Fragment {
             undoListener = (UndoListener) context;
         }
     }
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -111,6 +112,7 @@ public class KDramaFragment extends Fragment {
         recyclerViewWatching.setAdapter(watchingAdapter);
         recyclerViewWatched.setAdapter(watchedAdapter);
     }
+
     private void loadAnimeLists() {
         repository.getWatchingKdrama(new KDramaRepository.OnDataLoadedCallback<List<KDrama>>() {
 
@@ -173,7 +175,8 @@ public class KDramaFragment extends Fragment {
         // Add text change listener
         searchEditText.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -182,7 +185,8 @@ public class KDramaFragment extends Fragment {
             }
 
             @Override
-            public void afterTextChanged(Editable s) {}
+            public void afterTextChanged(Editable s) {
+            }
         });
 
         // Handle search action
@@ -274,9 +278,34 @@ public class KDramaFragment extends Fragment {
                         watchingList.size() - 1
                 ));
             }
+
             @Override
             public void onError(Exception e) {
                 showErrorMessage("Failed to add anime");
+            }
+        });
+    }
+
+    public void addKDramaToWatchedList(KDrama kdrama) {
+        repository.insertKdrama(kdrama, new KDramaRepository.OnDataLoadedCallback<Long>() {
+            @Override
+            public void onDataLoaded(Long id) {
+                watchedList.add(kdrama);
+                originalWatchedList.add(kdrama);
+                updateCounts();
+                watchedAdapter.notifyDataSetChanged();
+                addToUndoStack(new UndoAction_kdrama(
+                        UndoAction_kdrama.ActionType.ADD_TO_WATCHED,
+                        kdrama,
+                        watchedList.size() - 1
+
+
+                ));
+            }
+
+            @Override
+            public void onError(Exception e) {
+                showErrorMessage("Failed to add Kdrama");
             }
         });
     }
@@ -300,6 +329,7 @@ public class KDramaFragment extends Fragment {
                         originalPosition
                 ));
             }
+
             @Override
             public void onError(Exception e) {
                 showErrorMessage("Failed to move anime");
@@ -380,6 +410,9 @@ public class KDramaFragment extends Fragment {
                 case REMOVE_FROM_WATCHING:
                     undoRemoveFromWatching(action.getKdrama(), action.getPosition());
                     break;
+                case ADD_TO_WATCHED:
+                    undoAddToWatched(action.getKdrama(), action.getPosition());
+                    break;
             }
 
             if (undoListener != null) {
@@ -457,6 +490,22 @@ public class KDramaFragment extends Fragment {
         });
         updateCounts();
     }
+
+    private void undoAddToWatched(KDrama kdrama, int originalPosition) {
+        repository.deleteKdrama(kdrama, new KDramaRepository.OnDataLoadedCallback<Void>() {
+            @Override
+            public void onDataLoaded(Void data) {
+                watchedList.remove(originalPosition);
+                updateCounts();
+                watchedAdapter.notifyDataSetChanged();
+            }
+            @Override
+            public void onError(Exception e) {
+                showErrorMessage("Failed to undo add anime");
+            }
+
+        });
+        }
 
     private void undoAddToWatching(KDrama kdrama, int position) {
         repository.deleteKdrama(kdrama, new KDramaRepository.OnDataLoadedCallback<Void>() {

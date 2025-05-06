@@ -88,13 +88,13 @@ public class SearchKDramaActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerViews() {
-        KDramaSearchAdapter.OnItemClickListener listener = kdrama -> {
+        KDramaSearchAdapter.OnItemClickListener listener = (kdrama, listType) -> {
             try {
-                Log.d(TAG, "Adding KDrama: " + kdrama.getTitleEnglish());
+                Log.d(TAG, "Adding KDrama: " + kdrama.getTitleEnglish() + " to " + listType);
+                kdrama.setWatching("Watching".equals(listType));
                 selectedKDramaList.add(kdrama);
 
                 Intent resultIntent = new Intent();
-                kdrama.setWatching(true);
                 resultIntent.putExtra("selected_kdrama_list", new ArrayList<>(selectedKDramaList));
                 setResult(RESULT_OK, resultIntent);
 
