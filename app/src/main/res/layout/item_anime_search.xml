@@ -29,7 +29,7 @@
             android:id="@+id/btn_add"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Add to Watching"
+            android:text="Add"
             android:backgroundTint="#4CAF50"
             android:layout_marginTop="8dp"/>
     </LinearLayout>

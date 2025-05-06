@@ -83,26 +83,31 @@ public class SearchAnimeActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerViews() {
-        AnimeSearchAdapter.OnItemClickListener listener = anime -> {
+        AnimeSearchAdapter.OnItemClickListener listener = (anime, listType) -> {
             try {
-                Log.d(TAG, "Adding anime: " + anime.getTitleRomaji());
+                Log.d(TAG, "Adding anime: " + anime.getTitleRomaji() + " to " + listType);
+
+                // Set watching status based on selection
+                anime.setWatching("Watching".equals(listType));
+
                 selectedAnimeList.add(anime);
 
                 Intent resultIntent = new Intent();
-                anime.setWatching(true);
                 resultIntent.putExtra("selected_anime_list", new ArrayList<>(selectedAnimeList));
                 setResult(RESULT_OK, resultIntent);
 
                 Toast.makeText(SearchAnimeActivity.this,
-                        "Added " + anime.getTitleEnglish() + " to watching list",
+                        "Added " + anime.getTitleEnglish() + " to " + listType.toLowerCase() + " list",
                         Toast.LENGTH_SHORT).show();
             } catch (Exception e) {
-                Log.e(TAG, "Error adding anime to watching list", e);
+                Log.e(TAG, "Error adding anime to " + listType.toLowerCase() + " list", e);
                 Toast.makeText(SearchAnimeActivity.this,
                         "Error adding anime: " + e.getMessage(),
                         Toast.LENGTH_SHORT).show();
             }
         };
+
+
 
         animeAdapter = new AnimeSearchAdapter(animeList, listener);
         popularAnimeAdapter = new AnimeSearchAdapter(popularAnimeList, listener);

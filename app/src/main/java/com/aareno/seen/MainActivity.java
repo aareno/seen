@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
 
         // Create ColorStateLists for each tab
-        ColorStateList animeColors = createColorStateList(R.color.silver);
+        ColorStateList animeColors = createColorStateList(R.color.wood);
         ColorStateList kdramaColors = createColorStateList(R.color.red);
         ColorStateList tvMoviesColors = createColorStateList(R.color.black);
 

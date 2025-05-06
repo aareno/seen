@@ -1,5 +1,7 @@
 package com.aareno.seen.ui.Anime;
 
+import android.app.AlertDialog;
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,7 +22,7 @@ public class AnimeSearchAdapter extends RecyclerView.Adapter<AnimeSearchAdapter.
     private OnItemClickListener listener;
 
     public interface OnItemClickListener {
-        void onAddToWatchingClick(Anime anime);
+        void onAddToListClick(Anime anime, String listType); // listType = "Watching" or "Watched"
     }
 
     public AnimeSearchAdapter(List<Anime> animeList, OnItemClickListener listener) {
@@ -65,7 +67,7 @@ public class AnimeSearchAdapter extends RecyclerView.Adapter<AnimeSearchAdapter.
             // Set click listener for add to watching button
             addToWatchingButton.setOnClickListener(v -> {
                 if (listener != null && currentAnime != null) {
-                    listener.onAddToWatchingClick(currentAnime);
+                    showAddDialog(v.getContext(), currentAnime);
                 }
             });
 
@@ -83,6 +85,21 @@ public class AnimeSearchAdapter extends RecyclerView.Adapter<AnimeSearchAdapter.
             Glide.with(itemView.getContext())
                     .load(anime.getCoverImageUrl())
                     .into(coverImageView);
+        }
+
+        private void showAddDialog(Context context, Anime anime) {
+            final String[] options = {"Watching", "Watched"};
+            final int[] selectedIndex = {0}; // default to "Watching"
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+            builder.setTitle("Add to List")
+                    .setSingleChoiceItems(options, 0, (dialog, which) -> selectedIndex[0] = which)
+                    .setPositiveButton("Confirm", (dialog, which) -> {
+                        String chosen = options[selectedIndex[0]];
+                        listener.onAddToListClick(anime, chosen);
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
         }
     }
 }
