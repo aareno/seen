@@ -542,20 +542,6 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         Log.d("MainActivity", "Content filter changed: showing adult content = " + showAdultContent);
     }
 
-    // Method to refresh the current content
-    public void refreshCurrentContent() {
-        // Get the currently active fragment
-        Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
-
-        // Check which type of fragment it is and refresh accordingly
-        if (currentFragment instanceof AnimeFragment) {
-            animeFragment.refreshData();
-        } else if (currentFragment instanceof KDramaFragment) {
-            // kdramaFragment.refreshData();
-        } else if (currentFragment instanceof TvMoviesFragment) {
-            // TvMoviesFragment.refreshData();
-        }
-    }
 
     // Getter method for the adult content setting
     public boolean shouldShowAdultContent() {
