@@ -59,6 +59,33 @@
         android:buttonTint="@color/blue"
         android:textColor="?android:attr/textColorPrimary"/>
 
+    <!-- Adult Content Filter -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Content Filter"
+        android:textSize="18sp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:layout_marginTop="24dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Control visibility of mature content (18+)"
+        android:textSize="12sp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:layout_marginBottom="8dp"/>
+
+    <Switch
+        android:id="@+id/adultContentSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Show Adult Content (18+)"
+        android:textColor="?android:attr/textColorPrimary"
+        android:thumbTint="@color/blue"
+        android:trackTint="@color/gray"
+        android:layout_marginTop="8dp"/>
+
     <!-- Notification Settings -->
     <TextView
         android:layout_width="wrap_content"

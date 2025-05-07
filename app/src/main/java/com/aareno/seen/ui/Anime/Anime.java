@@ -35,6 +35,7 @@ public class Anime implements Serializable {
     private Date startDate;
     private Date endDate;
     private AiringStatus airingStatus;
+    private boolean isMature;
 
 
 
@@ -142,5 +143,14 @@ public class Anime implements Serializable {
             this.airingStatus = AiringStatus.ONGOING;
         }
     }
+
+    public boolean isMature() {
+        return isMature;
+    }
+
+    public void setMature(boolean mature) {
+        this.isMature = mature;
+    }
+
 
 }

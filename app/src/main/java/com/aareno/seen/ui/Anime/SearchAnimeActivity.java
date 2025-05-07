@@ -2,6 +2,7 @@ package com.aareno.seen.ui.Anime;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -57,10 +58,18 @@ public class SearchAnimeActivity extends AppCompatActivity {
     private TextView searchResultsTitle;
     private TextView popularTitle;
 
+    // Adult content filter setting
+    private boolean showAdultContent = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_anime);
+
+        // Load adult content filter setting
+        SharedPreferences prefs = getSharedPreferences("AppSettings", MODE_PRIVATE);
+        showAdultContent = prefs.getBoolean("show_adult_content", false);
+        Log.d(TAG, "Adult content filter: " + (showAdultContent ? "OFF" : "ON"));
 
         initializeViews();
         setupRecyclerViews();
@@ -107,8 +116,6 @@ public class SearchAnimeActivity extends AppCompatActivity {
             }
         };
 
-
-
         animeAdapter = new AnimeSearchAdapter(animeList, listener);
         popularAnimeAdapter = new AnimeSearchAdapter(popularAnimeList, listener);
 
@@ -154,9 +161,10 @@ public class SearchAnimeActivity extends AppCompatActivity {
     private void searchAnime(String query) {
         OkHttpClient client = new OkHttpClient();
 
-        String graphqlQuery = "query ($search: String) { " +
+        // Modified GraphQL query to include isAdult filter
+        String graphqlQuery = "query ($search: String, $isAdult: Boolean) { " +
                 "Page(page: 1, perPage: 10) { " +
-                "  media(search: $search, type: ANIME) { " +
+                "  media(search: $search, type: ANIME, isAdult: $isAdult) { " +
                 "    id " +
                 "    title { " +
                 "      romaji " +
@@ -167,6 +175,7 @@ public class SearchAnimeActivity extends AppCompatActivity {
                 "    } " +
                 "    episodes " +
                 "    status " +
+                "    isAdult " +
                 "    startDate { " +
                 "      year " +
                 "      month " +
@@ -189,9 +198,22 @@ public class SearchAnimeActivity extends AppCompatActivity {
                 "} " +
                 "}";
 
+        // Create JSON object for variables
+        JSONObject variables = new JSONObject();
+        try {
+            variables.put("search", query);
+            // If showAdultContent is false, explicitly filter out adult content
+            // If showAdultContent is true, we don't specify isAdult to get all content
+            if (!showAdultContent) {
+                variables.put("isAdult", false);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
         RequestBody requestBody = new FormBody.Builder()
                 .add("query", graphqlQuery)
-                .add("variables", "{\"search\":\"" + query + "\"}")
+                .add("variables", variables.toString())
                 .build();
 
         Request request = new Request.Builder()
@@ -200,6 +222,8 @@ public class SearchAnimeActivity extends AppCompatActivity {
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/json")
                 .build();
+
+        Log.d(TAG, "Sending search request with adult filter: " + (!showAdultContent));
 
         client.newCall(request).enqueue(new Callback() {
             @Override
@@ -219,9 +243,10 @@ public class SearchAnimeActivity extends AppCompatActivity {
     private void loadPopularAnime() {
         OkHttpClient client = new OkHttpClient();
 
-        String graphqlQuery = "query { " +
+        // Modified GraphQL query to include isAdult filter
+        String graphqlQuery = "query ($isAdult: Boolean) { " +
                 "Page(page: 1, perPage: 10) { " +
-                "  media(sort: POPULARITY_DESC, type: ANIME) { " +
+                "  media(sort: POPULARITY_DESC, type: ANIME, isAdult: $isAdult) { " +
                 "    id " +
                 "    title { " +
                 "      romaji " +
@@ -232,6 +257,7 @@ public class SearchAnimeActivity extends AppCompatActivity {
                 "    } " +
                 "    episodes " +
                 "    status " +
+                "    isAdult " +
                 "    startDate { " +
                 "      year " +
                 "      month " +
@@ -254,8 +280,20 @@ public class SearchAnimeActivity extends AppCompatActivity {
                 "} " +
                 "}";
 
+        // Create JSON object for variables
+        JSONObject variables = new JSONObject();
+        try {
+            // If showAdultContent is false, explicitly filter out adult content
+            if (!showAdultContent) {
+                variables.put("isAdult", false);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
         RequestBody requestBody = new FormBody.Builder()
                 .add("query", graphqlQuery)
+                .add("variables", variables.toString())
                 .build();
 
         Request request = new Request.Builder()
@@ -264,6 +302,8 @@ public class SearchAnimeActivity extends AppCompatActivity {
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/json")
                 .build();
+
+        Log.d(TAG, "Loading popular anime with adult filter: " + (!showAdultContent));
 
         client.newCall(request).enqueue(new Callback() {
             @Override
@@ -316,6 +356,9 @@ public class SearchAnimeActivity extends AppCompatActivity {
         JSONObject coverImage = media.getJSONObject("coverImage");
         int episodes = media.isNull("episodes") ? 12 : media.getInt("episodes");
 
+        // Get isAdult value if present
+        boolean isAdult = media.optBoolean("isAdult", false);
+
         // Parse dates
         JSONObject startDateObj = media.getJSONObject("startDate");
         JSONObject endDateObj = media.getJSONObject("endDate");
@@ -323,21 +366,21 @@ public class SearchAnimeActivity extends AppCompatActivity {
         // Create Calendar instances for dates
         Calendar startCal = Calendar.getInstance();
         Log.d("SearchAnimeActivity", "Anime: " + title);
-        Log.d("SearchAnimeActivity", "StartDate : " + startDateObj.getInt("year") +" " + startDateObj.getInt("month"));
-        if (!startDateObj.isNull("year")) {
+        Log.d("SearchAnimeActivity", "StartDate : " + startDateObj.optInt("year", 0) + " " + startDateObj.optInt("month", 0));
+        if (!startDateObj.isNull("year") && !startDateObj.isNull("month")) {
             startCal.set(
                     startDateObj.getInt("year"),
                     startDateObj.getInt("month") - 1,
-                    1
+                    startDateObj.optInt("day", 1)
             );
         }
 
         Calendar endCal = Calendar.getInstance();
-        if (!endDateObj.isNull("year")) {
+        if (!endDateObj.isNull("year") && !endDateObj.isNull("month")) {
             endCal.set(
                     endDateObj.getInt("year"),
                     endDateObj.getInt("month") - 1,
-                    1
+                    endDateObj.optInt("day", 1)
             );
         } else {
             endCal.setTime(startCal.getTime()); // Copy startCal date
@@ -348,7 +391,7 @@ public class SearchAnimeActivity extends AppCompatActivity {
 
         // Parse airing schedule
         List<Integer> airingDays = new ArrayList<>();
-        if (!media.isNull("airingSchedule")) {
+        if (!media.isNull("airingSchedule") && !media.getJSONObject("airingSchedule").isNull("nodes")) {
             JSONArray nodes = media.getJSONObject("airingSchedule")
                     .getJSONArray("nodes");
 
@@ -374,13 +417,21 @@ public class SearchAnimeActivity extends AppCompatActivity {
         Anime anime = new Anime(
                 media.getInt("id"),
                 title.getString("romaji"),
-                title.optString("english", ""),
+                title.optString("english", title.getString("romaji")), // Use romaji if English title is missing
                 coverImage.getString("large"),
                 episodes,
                 airingDays,
                 startCal.getTime(),
                 endCal.getTime()
         );
+
+        // Set the mature flag
+        anime.setMature(isAdult);
+
+        // If the anime is mature, log it (for debugging)
+        if (isAdult) {
+            Log.d(TAG, "Found adult anime: " + anime.getTitleRomaji());
+        }
 
         // Update the airing status
         anime.updateAiringStatus();

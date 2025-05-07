@@ -2,7 +2,9 @@ package com.aareno.seen;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -12,9 +14,18 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.work.Data;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.OutOfQuotaPolicy;
+import androidx.work.WorkInfo;
+import androidx.work.WorkManager;
 
+import com.aareno.seen.data.AiringCheckWorker;
+import com.aareno.seen.data.Anime.AnimeRepository;
 import com.aareno.seen.data.WorkScheduler;
 import com.aareno.seen.ui.Anime.Anime;
 import com.aareno.seen.ui.Anime.AnimeFragment;
@@ -29,6 +40,9 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.color.MaterialColors;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity implements AnimeFragment.UndoListener, KDramaFragment.UndoListener, TvMoviesFragment.UndoListener {
     private static final int SEARCH_ANIME_REQUEST_CODE = 1001;
@@ -48,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        requestNotificationPermission();
 
         // Initialize fragments
         animeFragment = new AnimeFragment();
@@ -118,14 +133,20 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                 Fragment currentFragment = getSupportFragmentManager()
                         .findFragmentById(R.id.fragment_container);
 
+                boolean showAdultContent = shouldShowAdultContent();
+
+
                 if (currentFragment instanceof AnimeFragment) {
                     Intent intent = new Intent(MainActivity.this, SearchAnimeActivity.class);
+                    intent.putExtra("show_adult_content", showAdultContent);
                     startActivityForResult(intent, SEARCH_ANIME_REQUEST_CODE);
                 } else if (currentFragment instanceof KDramaFragment) {
                     Intent intent = new Intent(MainActivity.this, SearchKDramaActivity.class);
+                    intent.putExtra("show_adult_content", showAdultContent);
                     startActivityForResult(intent, SEARCH_KDRAMA_REQUEST_CODE);
                 } else if (currentFragment instanceof TvMoviesFragment) {
                     Intent intent = new Intent(MainActivity.this, SearchShowActivity.class);
+                    intent.putExtra("show_adult_content", showAdultContent);
                     startActivityForResult(intent, SEARCH_TVMOVIES_REQUEST_CODE);
                 }
             });
@@ -400,10 +421,11 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         // Apply other settings as needed
         boolean notificationsEnabled = prefs.getBoolean("notifications_enabled", true);
         // Apply notification settings if needed
+        Log.d("MainActivity", "Notifications enabled: " + notificationsEnabled);
         if (notificationsEnabled) {
-            // Enable notifications logic
+            WorkScheduler.scheduleAiringNotifications(this);
         } else {
-            // Disable notifications logic
+            WorkScheduler.cancelAiringNotifications(this);
         }
     }
 
@@ -470,4 +492,149 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         }
     }
 
+    private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 123;
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= 33) { // Android 13 (TIRAMISU)
+            if (ContextCompat.checkSelfPermission(this, "android.permission.POST_NOTIFICATIONS") !=
+                    PackageManager.PERMISSION_GRANTED) {
+
+                ActivityCompat.requestPermissions(this,
+                        new String[]{"android.permission.POST_NOTIFICATIONS"},
+                        NOTIFICATION_PERMISSION_REQUEST_CODE);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == NOTIFICATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d("MainActivity", "Notification permission granted");
+            } else {
+                Log.d("MainActivity", "Notification permission denied");
+                Toast.makeText(this, "Notifications are required to receive show updates", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    public void onNotificationSettingChanged(boolean enabled) {
+        if (enabled) {
+            WorkScheduler.scheduleAiringNotifications(this);
+        } else {
+            WorkScheduler.cancelAiringNotifications(this);
+        }
+    }
+
+    private boolean showAdultContent = false;
+
+    // Method called when adult content filter is changed
+    public void onContentFilterChanged(boolean showAdultContent) {
+        this.showAdultContent = showAdultContent;
+
+        // Save the setting in SharedPreferences (optional if already done in SettingsFragment)
+        SharedPreferences.Editor editor = getSharedPreferences("AppSettings", MODE_PRIVATE).edit();
+        editor.putBoolean("show_adult_content", showAdultContent);
+        editor.apply();
+
+        // Log the change
+        Log.d("MainActivity", "Content filter changed: showing adult content = " + showAdultContent);
+    }
+
+    // Method to refresh the current content
+    public void refreshCurrentContent() {
+        // Get the currently active fragment
+        Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+
+        // Check which type of fragment it is and refresh accordingly
+        if (currentFragment instanceof AnimeFragment) {
+            animeFragment.refreshData();
+        } else if (currentFragment instanceof KDramaFragment) {
+            // kdramaFragment.refreshData();
+        } else if (currentFragment instanceof TvMoviesFragment) {
+            // TvMoviesFragment.refreshData();
+        }
+    }
+
+    // Getter method for the adult content setting
+    public boolean shouldShowAdultContent() {
+        // Read from SharedPreferences to ensure we always have the latest value
+        SharedPreferences prefs = getSharedPreferences("AppSettings", MODE_PRIVATE);
+        return prefs.getBoolean("show_adult_content", false);
+    }
+
+
+ /*
+    public void testNotification() {
+        Log.d("TestNotification", "Starting test notification process");
+
+        // Create a test anime that airs today
+        Anime testAnime = new Anime();
+        testAnime.setTitleEnglish("Test Anime");
+        testAnime.setAiringStatus(Anime.AiringStatus.ONGOING);
+        testAnime.setWatching(true);
+
+        // Get today's day number (1-7)
+        Calendar today = Calendar.getInstance();
+        int currentDay = today.get(Calendar.DAY_OF_WEEK);
+        int adjustedDay = (currentDay == Calendar.SUNDAY) ? 7 : currentDay - 1;
+        Log.d("TestNotification", "Setting up anime to air on day: " + adjustedDay);
+
+        // Set airing days to include today
+        List<Integer> airingDays = new ArrayList<>();
+        airingDays.add(adjustedDay);
+        testAnime.setAiringDays(airingDays);
+
+        // Calculate end date (10 weeks from now)
+        Calendar endDate = Calendar.getInstance();
+        endDate.add(Calendar.WEEK_OF_YEAR, 10);
+        testAnime.setEndDate(endDate.getTime());
+
+        testAnime.setEpisodeCount(10);
+        testAnime.setWatchedEpisodes(1);
+
+        AnimeRepository repository = new AnimeRepository(this);
+        repository.insertAnime(testAnime, new AnimeRepository.OnDataLoadedCallback<Long>() {
+            @Override
+            public void onDataLoaded(Long id) {
+                Log.d("TestNotification", "Test anime added successfully with ID: " + id);
+
+                // Create an immediate work request
+                OneTimeWorkRequest workRequest = new OneTimeWorkRequest.Builder(AiringCheckWorker.class)
+                        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                        .build();
+
+                Log.d("TestNotification", "Created work request: " + workRequest.getId());
+
+                // Get the WorkManager instance
+                WorkManager workManager = WorkManager.getInstance(getApplicationContext());
+
+                // Cancel any existing work
+                workManager.cancelAllWork();
+
+                // Observe the work status
+                workManager.getWorkInfoByIdLiveData(workRequest.getId())
+                        .observe(MainActivity.this, workInfo -> {
+                            if (workInfo != null) {
+                                Log.d("TestNotification", "Work status: " + workInfo.getState());
+                                if (workInfo.getState() == WorkInfo.State.SUCCEEDED) {
+                                    Log.d("TestNotification", "Work completed successfully");
+                                } else if (workInfo.getState() == WorkInfo.State.FAILED) {
+                                    Log.d("TestNotification", "Work failed");
+                                }
+                            }
+                        });
+
+                // Enqueue the work
+                workManager.beginWith(workRequest).enqueue();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e("TestNotification", "Error adding test anime", e);
+            }
+        });
+    }
+     */
 }

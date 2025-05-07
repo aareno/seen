@@ -22,6 +22,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.aareno.seen.MainActivity;
 import com.aareno.seen.R;
 import com.aareno.seen.data.Anime.AnimeRepository;
 import com.aareno.seen.data.KDrama.KDramaRepository;
@@ -584,5 +585,18 @@ public class AnimeFragment extends Fragment {
         watchedList.clear();
         watchedList.addAll(originalWatchedList);
         watchedAdapter.notifyDataSetChanged();
+    }
+
+    public void refreshData() {
+        // Get current adult content filter setting
+        boolean showAdultContent = false;
+        if (getActivity() instanceof MainActivity) {
+            showAdultContent = ((MainActivity) getActivity()).shouldShowAdultContent();
+        }
+
+        Log.d("AnimeFragment", "Refreshing data with adult content filter: " + (showAdultContent ? "OFF" : "ON"));
+
+        // Re-fetch your watching and watched lists with the updated filter
+        loadAnimeLists();
     }
 }
