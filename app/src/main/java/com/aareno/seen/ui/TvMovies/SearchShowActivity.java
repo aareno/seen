@@ -2,6 +2,7 @@ package com.aareno.seen.ui.TvMovies;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -33,6 +34,7 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -63,10 +65,22 @@ public class SearchShowActivity extends AppCompatActivity {
     private TextView searchResultsTitle;
     private TextView latestTitle;
 
+    private boolean showAdultContent = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_anime);
+
+        // Get adult content filter setting from intent or SharedPreferences
+        showAdultContent = getIntent().getBooleanExtra("show_adult_content", false);
+        if (!getIntent().hasExtra("show_adult_content")) {
+            // Fallback to SharedPreferences if not passed in intent
+            SharedPreferences prefs = getSharedPreferences("AppSettings", MODE_PRIVATE);
+            showAdultContent = prefs.getBoolean("show_adult_content", false);
+        }
+
+        Log.d(TAG, "Adult content filter: " + (showAdultContent ? "OFF" : "ON"));
 
         initializeViews();
         setupRecyclerViews();
@@ -83,6 +97,14 @@ public class SearchShowActivity extends AppCompatActivity {
         latestTitle = findViewById(R.id.popular_title);
         showList = new ArrayList<>();
         latestShowList = new ArrayList<>();
+
+        // Update titles to reflect Shows instead of Anime
+        if (searchResultsTitle != null) {
+            searchResultsTitle.setText("Search Results");
+        }
+        if (latestTitle != null) {
+            latestTitle.setText("Latest Shows");
+        }
 
         ImageButton backButton = findViewById(R.id.back_button);
         backButton.setOnClickListener(v -> finish());
@@ -163,17 +185,48 @@ public class SearchShowActivity extends AppCompatActivity {
                     String responseBody = response.body().string();
                     JSONArray searchArray = new JSONArray(responseBody);
                     final List<Show> results = new ArrayList<>();
+                    int totalShows = 0;
+                    int filteredShows = 0;
 
                     for (int i = 0; i < searchArray.length(); i++) {
                         JSONObject showObject = searchArray.getJSONObject(i).getJSONObject("show");
+                        totalShows++;
+
+                        // Check for mature content
+                        boolean isMature = isMatureContent(showObject);
+
+                        // Skip mature content if filter is on
+                        if (isMature && !showAdultContent) {
+                            Log.d(TAG, "Filtered out mature Show: " + showObject.optString("name"));
+                            filteredShows++;
+                            continue;
+                        }
+
                         Show show = parseShowFromJson(showObject);
+                        // Set the mature flag
+                        show.setMature(isMature);
                         results.add(show);
                     }
+
+                    final int finalTotalShows = totalShows;
+                    final int finalFilteredShows = filteredShows;
 
                     runOnUiThread(() -> {
                         showList.clear();
                         showList.addAll(results);
                         showAdapter.notifyDataSetChanged();
+
+                        // Log filtering statistics
+                        if (finalFilteredShows > 0) {
+                            Log.d(TAG, "Filtered " + finalFilteredShows + " out of " + finalTotalShows + " Shows");
+                        }
+
+                        // Show message if no results after filtering
+                        if (results.isEmpty()) {
+                            Toast.makeText(SearchShowActivity.this,
+                                    "No results found" + (!showAdultContent ? " (adult content filtered)" : ""),
+                                    Toast.LENGTH_SHORT).show();
+                        }
                     });
 
                 } catch (JSONException e) {
@@ -205,6 +258,8 @@ public class SearchShowActivity extends AppCompatActivity {
                     String responseBody = response.body().string();
                     JSONArray array = new JSONArray(responseBody);
                     final List<Show> results = new ArrayList<>();
+                    int totalShows = 0;
+                    int filteredShows = 0;
 
                     for (int i = 0; i < array.length(); i++) {
                         JSONObject showObject = array.getJSONObject(i).getJSONObject("show");
@@ -213,14 +268,37 @@ public class SearchShowActivity extends AppCompatActivity {
                         if (!"Scripted".equalsIgnoreCase(type)) {
                             continue; // Skip if not a scripted TV show
                         }
+
+                        totalShows++;
+
+                        // Check for mature content
+                        boolean isMature = isMatureContent(showObject);
+
+                        // Skip mature content if filter is on
+                        if (isMature && !showAdultContent) {
+                            Log.d(TAG, "Filtered out mature Show: " + showObject.optString("name"));
+                            filteredShows++;
+                            continue;
+                        }
+
                         Show show = parseShowFromJson(showObject);
+                        // Set the mature flag
+                        show.setMature(isMature);
                         results.add(show);
                     }
+
+                    final int finalTotalShows = totalShows;
+                    final int finalFilteredShows = filteredShows;
 
                     runOnUiThread(() -> {
                         latestShowList.clear();
                         latestShowList.addAll(results);
                         latestShowAdapter.notifyDataSetChanged();
+
+                        // Log filtering statistics
+                        if (finalFilteredShows > 0) {
+                            Log.d(TAG, "Filtered " + finalFilteredShows + " out of " + finalTotalShows + " Shows");
+                        }
                     });
 
                 } catch (JSONException e) {
@@ -230,6 +308,51 @@ public class SearchShowActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    // Helper method to determine if content is mature
+    private boolean isMatureContent(JSONObject showObject) {
+// If there's an IMDb ID, check with OMDb
+        if (showObject.has("externals")) {
+            JSONObject externals = showObject.optJSONObject("externals");
+            if (externals != null) {
+                String imdbId = externals.optString("imdb");
+                String omdbRating = fetchOMDbRating(imdbId);
+                if (omdbRating != null) {
+// Common adult ratings:
+                    List adultRatings = Arrays.asList("R", "NC-17", "TV-MA", "X", "UNRATED");
+                    if (adultRatings.contains(omdbRating.toUpperCase())) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private String fetchOMDbRating(String imdbId) {
+        if (imdbId == null || imdbId.isEmpty()) {
+            return null;
+        }
+        OkHttpClient client = new OkHttpClient();
+
+// Construct your OMDb query URL
+// (Replace YOUR_OMDB_API_KEY with an actual key you obtain from https://www.omdbapi.com/)
+        String url = "https://www.omdbapi.com/?i=" + imdbId + "&apikey=18f70c59";
+
+        Request request = new Request.Builder().url(url).get().build();
+        try {
+            Response response = client.newCall(request).execute();
+            if (response.isSuccessful()) {
+                String body = response.body().string();
+                JSONObject omdbJson = new JSONObject(body);
+                // The "Rated" field in OMDb might look like "PG-13", "R", "TV-MA", etc.
+                return omdbJson.optString("Rated", "N/A");
+            }
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private Show parseShowFromJson(JSONObject show) throws JSONException {
@@ -259,7 +382,6 @@ public class SearchShowActivity extends AppCompatActivity {
 
         return parsedShow;
     }
-
 
     private void fetchEpisodeCount(Show show) {
         OkHttpClient client = new OkHttpClient();
@@ -323,4 +445,3 @@ public class SearchShowActivity extends AppCompatActivity {
         recyclerView.setVisibility(isSearching ? View.VISIBLE : View.GONE);
     }
 }
-

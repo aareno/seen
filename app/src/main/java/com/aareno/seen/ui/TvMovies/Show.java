@@ -30,6 +30,7 @@ public class Show implements Serializable {
     private Date startDate;
     private Date endDate;
     private Anime.AiringStatus airingStatus;
+    private boolean isMature;
 
     public Show() {}
 
@@ -144,6 +145,14 @@ public class Show implements Serializable {
 
     public boolean airsOnDay(int day) {
         return airingDays != null && airingDays.contains(day);
+    }
+
+    public boolean isMature() {
+        return isMature;
+    }
+
+    public void setMature(boolean mature) {
+        this.isMature = mature;
     }
 }
 

@@ -10,7 +10,7 @@ import androidx.room.TypeConverters;
 import com.aareno.seen.data.Anime.DateConverter;
 import com.aareno.seen.ui.TvMovies.Show;
 
-@Database(entities = {Show.class}, version = 1, exportSchema = false)
+@Database(entities = {Show.class}, version = 2, exportSchema = false)
 @TypeConverters({DateConverter.class})
 public abstract class ShowDatabase extends RoomDatabase {
     private static volatile ShowDatabase INSTANCE;

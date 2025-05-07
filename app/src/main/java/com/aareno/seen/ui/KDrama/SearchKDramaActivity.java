@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -304,49 +305,48 @@ public class SearchKDramaActivity extends AppCompatActivity {
     }
 
     // Helper method to determine if content is mature
-    private boolean isMatureContent(JSONObject showObject) throws JSONException {
-        // Check for mature content based on available information
-
-        // 1. Check summary for adult content keywords
-        if (!showObject.isNull("summary")) {
-            String summary = showObject.optString("summary", "").toLowerCase();
-            // Look for mature content indicators in summary
-            if (summary.contains("adult") ||
-                    summary.contains("erotic") ||
-                    summary.contains("mature content") ||
-                    summary.contains("18+") ||
-                    summary.contains("explicit") ||
-                    summary.contains("sex") ||
-                    summary.contains("nudity")) {
-                return true;
-            }
-        }
-
-        // 2. Check genres for adult content indicators
-        if (!showObject.isNull("genres")) {
-            JSONArray genres = showObject.getJSONArray("genres");
-            for (int i = 0; i < genres.length(); i++) {
-                String genre = genres.optString(i, "").toLowerCase();
-                // Look for mature genres
-                if (genre.contains("adult") ||
-                        genre.contains("erotic") ||
-                        genre.contains("mature")) {
-                    return true;
+    private boolean isMatureContent(JSONObject showObject) {
+// If there's an IMDb ID, check with OMDb
+        if (showObject.has("externals")) {
+            JSONObject externals = showObject.optJSONObject("externals");
+            if (externals != null) {
+                String imdbId = externals.optString("imdb");
+                String omdbRating = fetchOMDbRating(imdbId);
+                if (omdbRating != null) {
+// Common adult ratings:
+                    List adultRatings = Arrays.asList("R", "NC-17", "TV-MA", "X", "UNRATED");
+                    if (adultRatings.contains(omdbRating.toUpperCase())) {
+                        return true;
+                    }
                 }
             }
         }
-
-        // 3. Check the show name for adult content indicators
-        String name = showObject.optString("name", "").toLowerCase();
-        if (name.contains("adult") ||
-                name.contains("erotic") ||
-                name.contains("18+") ||
-                name.contains("explicit")) {
-            return true;
-        }
-
-        // Default to not mature if no mature indicators are found
         return false;
+    }
+
+    private String fetchOMDbRating(String imdbId) {
+        if (imdbId == null || imdbId.isEmpty()) {
+            return null;
+        }
+        OkHttpClient client = new OkHttpClient();
+
+// Construct your OMDb query URL
+// (Replace YOUR_OMDB_API_KEY with an actual key you obtain from https://www.omdbapi.com/)
+        String url = "https://www.omdbapi.com/?i=" + imdbId + "&apikey=18f70c59";
+
+        Request request = new Request.Builder().url(url).get().build();
+        try {
+            Response response = client.newCall(request).execute();
+            if (response.isSuccessful()) {
+                String body = response.body().string();
+                JSONObject omdbJson = new JSONObject(body);
+                // The "Rated" field in OMDb might look like "PG-13", "R", "TV-MA", etc.
+                return omdbJson.optString("Rated", "N/A");
+            }
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private KDrama parseKDramaFromJson(JSONObject show) throws JSONException {

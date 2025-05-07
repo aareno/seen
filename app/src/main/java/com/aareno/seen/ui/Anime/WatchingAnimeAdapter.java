@@ -103,7 +103,8 @@ public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdap
         }
 
         void bind(Anime currentAnime) {
-            titleTextView.setText(currentAnime.getTitleEnglish() != null ? currentAnime.getTitleEnglish() : currentAnime.getTitleRomaji());
+            Log.d("WatchingAnimeAdapter", "Binding anime: " + currentAnime.getTitleEnglish());
+            titleTextView.setText(!"null".equals(currentAnime.getTitleEnglish()) ? currentAnime.getTitleEnglish() : currentAnime.getTitleRomaji());
             episodesTextView.setText("Episode: " + currentAnime.getWatchedEpisodes());
             Glide.with(context).load(currentAnime.getCoverImageUrl()).into(coverImageView);
 

@@ -22,6 +22,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.aareno.seen.MainActivity;
 import com.aareno.seen.R;
 import com.aareno.seen.data.Anime.AnimeRepository;
 import com.aareno.seen.data.KDrama.KDramaRepository;
@@ -208,14 +209,35 @@ public class TvMoviesFragment extends Fragment {
     }
 
     private void loadAnimeLists() {
+        boolean showAdultContent = false;
+        if (getActivity() instanceof MainActivity) {
+            showAdultContent = ((MainActivity) getActivity()).shouldShowAdultContent();
+        }
+
+        // Final variable for use in callbacks
+        final boolean finalShowAdultContent = showAdultContent;
+
         repository.getWatchingShow(new ShowRepository.OnDataLoadedCallback<List<Show>>() {
 
             @Override
             public void onDataLoaded(List<Show> watchingKDrama) {
+
+                List<Show> filteredList = watchingKDrama;
+                if (!finalShowAdultContent) {
+                    filteredList = new ArrayList<>();
+                    for (Show anime : watchingKDrama) {
+                        if (!anime.isMature()) {
+                            filteredList.add(anime);
+                        }
+                    }
+                    Log.d(TAG, "Filtered out " + (watchingKDrama.size() - filteredList.size()) +
+                            " mature anime from watching list");
+                }
+
                 originalWatchingList.clear();
-                originalWatchingList.addAll(watchingKDrama);
+                originalWatchingList.addAll(filteredList);
                 watchingList.clear();
-                watchingList.addAll(watchingKDrama);
+                watchingList.addAll(filteredList);
                 watchingAdapter.notifyDataSetChanged();
                 updateCounts();
             }
@@ -230,10 +252,23 @@ public class TvMoviesFragment extends Fragment {
         repository.getWatchedShow(new ShowRepository.OnDataLoadedCallback<List<Show>>() {
             @Override
             public void onDataLoaded(List<Show> watchedKDrama) {
+
+                List<Show> filteredList = watchedKDrama;
+                if (!finalShowAdultContent) {
+                    filteredList = new ArrayList<>();
+                    for (Show anime : watchedKDrama) {
+                        if (!anime.isMature()) {
+                            filteredList.add(anime);
+                        }
+                    }
+                    Log.d(TAG, "Filtered out " + (watchedKDrama.size() - filteredList.size()) +
+                            " mature anime from watching list");
+                }
+
                 originalWatchedList.clear();
-                originalWatchedList.addAll(watchedKDrama);
+                originalWatchedList.addAll(filteredList);
                 watchedList.clear();
-                watchedList.addAll(watchedKDrama);
+                watchedList.addAll(filteredList);
                 scheduleUpdatesForAllOngoingAnimes();
                 watchedAdapter.notifyDataSetChanged();
                 updateCounts();

@@ -139,10 +139,25 @@ public class KDramaFragment extends Fragment {
                     Log.d("KDrama", "Fragment not attached during callback");
                     return;
                 }
+
+                // Filter out mature content if needed
+                List<KDrama> filteredList = watchingKDrama;
+                if (!finalShowAdultContent) {
+                    filteredList = new ArrayList<>();
+                    for (KDrama anime : watchingKDrama) {
+                        if (!anime.isMature()) {
+                            filteredList.add(anime);
+                        }
+                    }
+                    Log.d(TAG, "Filtered out " + (watchingKDrama.size() - filteredList.size()) +
+                            " mature anime from watching list");
+                }
+
                 originalWatchingList.clear();
-                originalWatchingList.addAll(watchingKDrama);
+                originalWatchingList.addAll(filteredList);
                 watchingList.clear();
-                watchingList.addAll(watchingKDrama);
+                watchingList.addAll(filteredList);
+                scheduleUpdatesForAllOngoingAnimes();
                 watchingAdapter.notifyDataSetChanged();
                 updateCounts();
             }
@@ -157,11 +172,23 @@ public class KDramaFragment extends Fragment {
         repository.getWatchedKdrama(new KDramaRepository.OnDataLoadedCallback<List<KDrama>>() {
             @Override
             public void onDataLoaded(List<KDrama> watchedKDrama) {
+
+                List<KDrama> filteredList = watchedKDrama;
+                if (!finalShowAdultContent) {
+                    filteredList = new ArrayList<>();
+                    for (KDrama anime : watchedKDrama) {
+                        if (!anime.isMature()) {
+                            filteredList.add(anime);
+                        }
+                    }
+                    Log.d(TAG, "Filtered out " + (watchedKDrama.size() - filteredList.size()) +
+                            " mature anime from watching list");
+                }
+
                 originalWatchedList.clear();
-                originalWatchedList.addAll(watchedKDrama);
+                originalWatchedList.addAll(filteredList);
                 watchedList.clear();
-                watchedList.addAll(watchedKDrama);
-                scheduleUpdatesForAllOngoingAnimes();  // Changed from animes to KDramas
+                watchedList.addAll(filteredList);
                 watchedAdapter.notifyDataSetChanged();
                 updateCounts();
             }
