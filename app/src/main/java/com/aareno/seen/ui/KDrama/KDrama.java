@@ -30,6 +30,7 @@ public class KDrama implements Serializable {
     private Date startDate;
     private Date endDate;
     private Anime.AiringStatus airingStatus;
+    private boolean isMature;
 
     public KDrama() {}
 
@@ -140,6 +141,14 @@ public class KDrama implements Serializable {
         } else {
             this.airingStatus = Anime.AiringStatus.ONGOING;
         }
+    }
+
+    public boolean isMature() {
+        return isMature;
+    }
+
+    public void setMature(boolean mature) {
+        this.isMature = mature;
     }
 
     public boolean airsOnDay(int day) {

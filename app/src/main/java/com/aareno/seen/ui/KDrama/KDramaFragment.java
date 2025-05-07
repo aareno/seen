@@ -1,6 +1,7 @@
 package com.aareno.seen.ui.KDrama;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -22,6 +23,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.aareno.seen.MainActivity;
 import com.aareno.seen.R;
 import com.aareno.seen.data.Anime.AnimeRepository;
 import com.aareno.seen.data.KDrama.KDramaRepository;
@@ -69,6 +71,7 @@ public class KDramaFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         repository = new KDramaRepository(requireContext());
+
     }
 
     @Nullable
@@ -92,7 +95,7 @@ public class KDramaFragment extends Fragment {
 
         setupSearch();
         setupAdapters();
-        loadAnimeLists();
+        loadKDramaLists();
 
         return view;
     }
@@ -116,7 +119,18 @@ public class KDramaFragment extends Fragment {
         recyclerViewWatched.setAdapter(watchedAdapter);
     }
 
-    private void loadAnimeLists() {
+    private void loadKDramaLists() {
+        // Get adult content filter setting from MainActivity
+        boolean showAdultContent = false;
+        if (getActivity() instanceof MainActivity) {
+            showAdultContent = ((MainActivity) getActivity()).shouldShowAdultContent();
+        }
+
+        // Final variable for use in callbacks
+        final boolean finalShowAdultContent = showAdultContent;
+
+        Log.d(TAG, "Loading K-drama lists with adult content filter: " + (showAdultContent ? "OFF" : "ON"));
+
         repository.getWatchingKdrama(new KDramaRepository.OnDataLoadedCallback<List<KDrama>>() {
 
             @Override
@@ -135,8 +149,8 @@ public class KDramaFragment extends Fragment {
 
             @Override
             public void onError(Exception e) {
-                Log.e(TAG, "Error loading watching kdrama", e);
-                showErrorMessage("Failed to load watching kdrama");
+                Log.e(TAG, "Error loading watching K-drama", e);
+                showErrorMessage("Failed to load watching K-drama");
             }
         });
 
@@ -147,15 +161,15 @@ public class KDramaFragment extends Fragment {
                 originalWatchedList.addAll(watchedKDrama);
                 watchedList.clear();
                 watchedList.addAll(watchedKDrama);
-                scheduleUpdatesForAllOngoingAnimes();
+                scheduleUpdatesForAllOngoingAnimes();  // Changed from animes to KDramas
                 watchedAdapter.notifyDataSetChanged();
                 updateCounts();
             }
 
             @Override
             public void onError(Exception e) {
-                Log.e(TAG, "Error loading watched kdrama", e);
-                showErrorMessage("Failed to load watched kdrama");
+                Log.e(TAG, "Error loading watched K-drama", e);
+                showErrorMessage("Failed to load watched K-drama");
             }
         });
     }
@@ -589,5 +603,4 @@ public class KDramaFragment extends Fragment {
         watchedList.addAll(originalWatchedList);
         watchedAdapter.notifyDataSetChanged();
     }
-
 }

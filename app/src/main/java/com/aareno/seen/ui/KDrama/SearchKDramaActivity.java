@@ -2,6 +2,7 @@ package com.aareno.seen.ui.KDrama;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -62,10 +63,23 @@ public class SearchKDramaActivity extends AppCompatActivity {
     private TextView searchResultsTitle;
     private TextView latestTitle;
 
+    // Adult content filter
+    private boolean showAdultContent = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_anime);
+
+        // Get adult content filter setting from intent or SharedPreferences
+        showAdultContent = getIntent().getBooleanExtra("show_adult_content", false);
+        if (!getIntent().hasExtra("show_adult_content")) {
+            // Fallback to SharedPreferences if not passed in intent
+            SharedPreferences prefs = getSharedPreferences("AppSettings", MODE_PRIVATE);
+            showAdultContent = prefs.getBoolean("show_adult_content", false);
+        }
+
+        Log.d(TAG, "Adult content filter: " + (showAdultContent ? "OFF" : "ON"));
 
         initializeViews();
         setupRecyclerViews();
@@ -83,6 +97,14 @@ public class SearchKDramaActivity extends AppCompatActivity {
         kDramaList = new ArrayList<>();
         latestKDramaList = new ArrayList<>();
 
+        // Update titles to reflect K-Drama instead of Anime
+        if (searchResultsTitle != null) {
+            searchResultsTitle.setText("Search Results");
+        }
+        if (latestTitle != null) {
+            latestTitle.setText("Latest K-Dramas");
+        }
+
         ImageButton backButton = findViewById(R.id.back_button);
         backButton.setOnClickListener(v -> finish());
     }
@@ -99,10 +121,10 @@ public class SearchKDramaActivity extends AppCompatActivity {
                 setResult(RESULT_OK, resultIntent);
 
                 Toast.makeText(SearchKDramaActivity.this,
-                        "Added " + kdrama.getTitleEnglish() + " to watching list",
+                        "Added " + kdrama.getTitleEnglish() + " to " + listType.toLowerCase() + " list",
                         Toast.LENGTH_SHORT).show();
             } catch (Exception e) {
-                Log.e(TAG, "Error adding KDrama to watching list", e);
+                Log.e(TAG, "Error adding KDrama to " + listType.toLowerCase() + " list", e);
                 Toast.makeText(SearchKDramaActivity.this,
                         "Error adding KDrama: " + e.getMessage(),
                         Toast.LENGTH_SHORT).show();
@@ -174,7 +196,18 @@ public class SearchKDramaActivity extends AppCompatActivity {
                     for (int i = 0; i < searchArray.length(); i++) {
                         JSONObject showObject = searchArray.getJSONObject(i).getJSONObject("show");
                         if ("Korean".equalsIgnoreCase(showObject.optString("language"))) {
+                            // Check for mature content
+                            boolean isMature = isMatureContent(showObject);
+
+                            // Skip mature content if filter is on
+                            if (isMature && !showAdultContent) {
+                                Log.d(TAG, "Filtered out mature K-Drama: " + showObject.optString("name"));
+                                continue;
+                            }
+
                             KDrama kdrama = parseKDramaFromJson(showObject);
+                            // Set the mature flag
+                            kdrama.setMature(isMature);
                             results.add(kdrama);
                         }
                     }
@@ -183,6 +216,13 @@ public class SearchKDramaActivity extends AppCompatActivity {
                         kDramaList.clear();
                         kDramaList.addAll(results);
                         kDramaAdapter.notifyDataSetChanged();
+
+                        // Show message if no results after filtering
+                        if (results.isEmpty()) {
+                            Toast.makeText(SearchKDramaActivity.this,
+                                    "No results found" + (!showAdultContent ? " (adult content filtered)" : ""),
+                                    Toast.LENGTH_SHORT).show();
+                        }
                     });
 
                 } catch (JSONException e) {
@@ -204,7 +244,7 @@ public class SearchKDramaActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call call, IOException e) {
                 runOnUiThread(() -> Toast.makeText(SearchKDramaActivity.this,
-                        "Failed to load latest KDramas: " + e.getMessage(),
+                        "Failed to load latest K-Dramas: " + e.getMessage(),
                         Toast.LENGTH_SHORT).show());
             }
 
@@ -214,19 +254,43 @@ public class SearchKDramaActivity extends AppCompatActivity {
                     String responseBody = response.body().string();
                     JSONArray array = new JSONArray(responseBody);
                     final List<KDrama> results = new ArrayList<>();
+                    int totalShows = 0;
+                    int filteredShows = 0;
 
                     for (int i = 0; i < array.length(); i++) {
                         JSONObject showObject = array.getJSONObject(i).getJSONObject("show");
                         if ("Korean".equalsIgnoreCase(showObject.optString("language"))) {
+                            totalShows++;
+
+                            // Check for mature content
+                            boolean isMature = isMatureContent(showObject);
+
+                            // Skip mature content if filter is on
+                            if (isMature && !showAdultContent) {
+                                Log.d(TAG, "Filtered out mature K-Drama: " + showObject.optString("name"));
+                                filteredShows++;
+                                continue;
+                            }
+
                             KDrama kdrama = parseKDramaFromJson(showObject);
+                            // Set the mature flag
+                            kdrama.setMature(isMature);
                             results.add(kdrama);
                         }
                     }
+
+                    final int finalTotalShows = totalShows;
+                    final int finalFilteredShows = filteredShows;
 
                     runOnUiThread(() -> {
                         latestKDramaList.clear();
                         latestKDramaList.addAll(results);
                         latestKDramaAdapter.notifyDataSetChanged();
+
+                        // Log filtering statistics
+                        if (finalFilteredShows > 0) {
+                            Log.d(TAG, "Filtered " + finalFilteredShows + " out of " + finalTotalShows + " K-Dramas");
+                        }
                     });
 
                 } catch (JSONException e) {
@@ -237,6 +301,52 @@ public class SearchKDramaActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    // Helper method to determine if content is mature
+    private boolean isMatureContent(JSONObject showObject) throws JSONException {
+        // Check for mature content based on available information
+
+        // 1. Check summary for adult content keywords
+        if (!showObject.isNull("summary")) {
+            String summary = showObject.optString("summary", "").toLowerCase();
+            // Look for mature content indicators in summary
+            if (summary.contains("adult") ||
+                    summary.contains("erotic") ||
+                    summary.contains("mature content") ||
+                    summary.contains("18+") ||
+                    summary.contains("explicit") ||
+                    summary.contains("sex") ||
+                    summary.contains("nudity")) {
+                return true;
+            }
+        }
+
+        // 2. Check genres for adult content indicators
+        if (!showObject.isNull("genres")) {
+            JSONArray genres = showObject.getJSONArray("genres");
+            for (int i = 0; i < genres.length(); i++) {
+                String genre = genres.optString(i, "").toLowerCase();
+                // Look for mature genres
+                if (genre.contains("adult") ||
+                        genre.contains("erotic") ||
+                        genre.contains("mature")) {
+                    return true;
+                }
+            }
+        }
+
+        // 3. Check the show name for adult content indicators
+        String name = showObject.optString("name", "").toLowerCase();
+        if (name.contains("adult") ||
+                name.contains("erotic") ||
+                name.contains("18+") ||
+                name.contains("explicit")) {
+            return true;
+        }
+
+        // Default to not mature if no mature indicators are found
+        return false;
     }
 
     private KDrama parseKDramaFromJson(JSONObject show) throws JSONException {
@@ -316,13 +426,13 @@ public class SearchKDramaActivity extends AppCompatActivity {
 
     private int convertDayToInteger(String day) {
         switch (day.toLowerCase()) {
-            case "monday":    return Calendar.MONDAY;
-            case "tuesday":   return Calendar.TUESDAY;
-            case "wednesday": return Calendar.WEDNESDAY;
-            case "thursday":  return Calendar.THURSDAY;
-            case "friday":    return Calendar.FRIDAY;
-            case "saturday":  return Calendar.SATURDAY;
-            case "sunday":    return Calendar.SUNDAY;
+            case "monday":    return 1; // Calendar.MONDAY adjusted to your format
+            case "tuesday":   return 2; // Calendar.TUESDAY adjusted to your format
+            case "wednesday": return 3; // Calendar.WEDNESDAY adjusted to your format
+            case "thursday":  return 4; // Calendar.THURSDAY adjusted to your format
+            case "friday":    return 5; // Calendar.FRIDAY adjusted to your format
+            case "saturday":  return 6; // Calendar.SATURDAY adjusted to your format
+            case "sunday":    return 7; // Calendar.SUNDAY adjusted to your format
             default: return -1;
         }
     }
