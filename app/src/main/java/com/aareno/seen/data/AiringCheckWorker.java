@@ -16,8 +16,10 @@ import com.aareno.seen.ui.KDrama.KDrama;
 import com.aareno.seen.ui.TvMovies.Show;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 public class AiringCheckWorker extends Worker {
     private static final String TAG = "AiringCheckWorker";
@@ -51,90 +53,101 @@ public class AiringCheckWorker extends Worker {
 
     private void checkAiringShows() {
         Log.d(TAG, "checkAiringShows() started");
-
         Calendar today = Calendar.getInstance();
-        int currentDay = today.get(Calendar.DAY_OF_WEEK);
-        int adjustedDay = (currentDay == Calendar.SUNDAY) ? 7 : currentDay - 1;
-        Log.d(TAG, "Current adjusted day: " + adjustedDay);
+        List<String> airingTodayShows = new ArrayList<>();
 
-        Context context = getApplicationContext();
-        AnimeRepository repository = new AnimeRepository(context);
-        NotificationHelper notificationHelper = new NotificationHelper(context);
+        // Create CountDownLatch to wait for all async operations
+        CountDownLatch latch = new CountDownLatch(3);
 
-        // Test notification to verify notification system works
-        Log.d(TAG, "Sending test notification");
-        notificationHelper.showAiringNotification(
-                "Test Notification",
-                "This is a test notification from AiringCheckWorker"
-        );
-
-        repository.getWatchingAnime(new AnimeRepository.OnDataLoadedCallback<List<Anime>>() {
+        // Check Anime
+        animeRepository.getWatchingAnime(new AnimeRepository.OnDataLoadedCallback<List<Anime>>() {
             @Override
             public void onDataLoaded(List<Anime> animeList) {
-                Log.d(TAG, "getWatchingAnime callback received, size: " + animeList.size());
-
                 for (Anime anime : animeList) {
-                    Log.d(TAG, "Checking anime: " + anime.getTitleEnglish());
-                    Log.d(TAG, "Airing days: " + anime.getAiringDays());
-                    Log.d(TAG, "Is watching: " + anime.isWatching());
-
-                    if (anime.getAiringDays() != null && anime.getAiringDays().contains(adjustedDay)) {
-                        Log.d(TAG, "Found matching anime: " + anime.getTitleEnglish());
-                        notificationHelper.showAiringNotification(
-                                "New Episode Today!",
-                                anime.getTitleEnglish() + " has a new episode today!"
-                        );
+                    if (isAiringToday(anime, today)) {
+                        airingTodayShows.add(anime.getTitleEnglish());
                     }
                 }
+                latch.countDown();
             }
 
             @Override
             public void onError(Exception e) {
-                Log.e(TAG, "Error in getWatchingAnime", e);
+                Log.e(TAG, "Error checking anime", e);
+                latch.countDown();
             }
         });
 
-
-        // Check kdramas
+        // Check KDrama
         kdramaRepository.getWatchingKdrama(new KDramaRepository.OnDataLoadedCallback<List<KDrama>>() {
             @Override
             public void onDataLoaded(List<KDrama> kdramaList) {
                 for (KDrama kdrama : kdramaList) {
                     if (isAiringToday(kdrama, today)) {
-                        notificationHelper.showAiringNotification(
-                                "New Episode Today!",
-                                kdrama.getTitleEnglish() + " has a new episode today!"
-                        );
+                        airingTodayShows.add(kdrama.getTitleEnglish());
                     }
                 }
+                latch.countDown();
             }
 
             @Override
             public void onError(Exception e) {
-                Log.e("AiringCheckWorker", "Error checking kdramas", e);
+                Log.e(TAG, "Error checking kdramas", e);
+                latch.countDown();
             }
         });
 
-        // Check Show
+        // Check Shows
         showRepository.getWatchingShow(new ShowRepository.OnDataLoadedCallback<List<Show>>() {
             @Override
-            public void onDataLoaded(List<Show> kdramaList) {
-                for (Show kdrama : kdramaList) {
-                    if (isAiringToday(kdrama, today)) {
-                        notificationHelper.showAiringNotification(
-                                "New Episode Today!",
-                                kdrama.getTitleEnglish() + " has a new episode today!"
-                        );
+            public void onDataLoaded(List<Show> showList) {
+                for (Show show : showList) {
+                    if (isAiringToday(show, today)) {
+                        airingTodayShows.add(show.getTitleEnglish());
                     }
                 }
+                latch.countDown();
             }
 
             @Override
             public void onError(Exception e) {
-                Log.e("AiringCheckWorker", "Error checking kdramas", e);
+                Log.e(TAG, "Error checking shows", e);
+                latch.countDown();
             }
         });
 
+        // Wait for all async operations to complete
+        try {
+            latch.await();
+
+            // Send combined notification if there are any shows airing today
+            if (!airingTodayShows.isEmpty()) {
+                String notificationTitle = "New Episodes Today!";
+                String notificationContent = buildNotificationContent(airingTodayShows);
+                notificationHelper.showAiringNotification(notificationTitle, notificationContent);
+            }
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Error waiting for async operations", e);
+        }
+    }
+
+    private String buildNotificationContent(List<String> shows) {
+        if (shows.size() == 1) {
+            return shows.get(0) + " has a new episode today!";
+        }
+
+        StringBuilder content = new StringBuilder();
+        for (int i = 0; i < shows.size(); i++) {
+            if (i == shows.size() - 1) {
+                content.append("and ").append(shows.get(i));
+            } else if (i == shows.size() - 2) {
+                content.append(shows.get(i)).append(" ");
+            } else {
+                content.append(shows.get(i)).append(", ");
+            }
+        }
+        content.append(" have new episodes today!");
+        return content.toString();
     }
 
     private boolean isAiringToday(Anime anime, Calendar today) {
