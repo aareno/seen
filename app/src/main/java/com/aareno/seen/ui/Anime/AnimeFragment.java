@@ -117,6 +117,17 @@ public class AnimeFragment extends Fragment {
     }
 
     private void loadAnimeLists() {
+        // Get adult content filter setting from MainActivity
+        boolean showAdultContent = false;
+        if (getActivity() instanceof MainActivity) {
+            showAdultContent = ((MainActivity) getActivity()).shouldShowAdultContent();
+        }
+
+        // Final variable for use in callbacks
+        final boolean finalShowAdultContent = showAdultContent;
+
+        Log.d(TAG, "Loading anime lists with adult content filter: " + (showAdultContent ? "OFF" : "ON"));
+
         repository.getWatchingAnime(new AnimeRepository.OnDataLoadedCallback<List<Anime>>() {
             @Override
             public void onDataLoaded(List<Anime> watchingAnime) {
@@ -124,10 +135,24 @@ public class AnimeFragment extends Fragment {
                     Log.d("AnimeFragment", "Fragment not attached during callback");
                     return;
                 }
+
+                // Filter out mature content if needed
+                List<Anime> filteredList = watchingAnime;
+                if (!finalShowAdultContent) {
+                    filteredList = new ArrayList<>();
+                    for (Anime anime : watchingAnime) {
+                        if (!anime.isMature()) {
+                            filteredList.add(anime);
+                        }
+                    }
+                    Log.d(TAG, "Filtered out " + (watchingAnime.size() - filteredList.size()) +
+                            " mature anime from watching list");
+                }
+
                 originalWatchingList.clear();
-                originalWatchingList.addAll(watchingAnime);
+                originalWatchingList.addAll(filteredList);
                 watchingList.clear();
-                watchingList.addAll(watchingAnime);
+                watchingList.addAll(filteredList);
                 scheduleUpdatesForAllOngoingAnimes();
                 watchingAdapter.notifyDataSetChanged();
                 updateCounts();
@@ -143,10 +168,28 @@ public class AnimeFragment extends Fragment {
         repository.getWatchedAnime(new AnimeRepository.OnDataLoadedCallback<List<Anime>>() {
             @Override
             public void onDataLoaded(List<Anime> watchedAnime) {
+                if (!isAdded()) {
+                    Log.d("AnimeFragment", "Fragment not attached during callback");
+                    return;
+                }
+
+                // Filter out mature content if needed
+                List<Anime> filteredList = watchedAnime;
+                if (!finalShowAdultContent) {
+                    filteredList = new ArrayList<>();
+                    for (Anime anime : watchedAnime) {
+                        if (!anime.isMature()) {
+                            filteredList.add(anime);
+                        }
+                    }
+                    Log.d(TAG, "Filtered out " + (watchedAnime.size() - filteredList.size()) +
+                            " mature anime from watched list");
+                }
+
                 originalWatchedList.clear();
-                originalWatchedList.addAll(watchedAnime);
+                originalWatchedList.addAll(filteredList);
                 watchedList.clear();
-                watchedList.addAll(watchedAnime);
+                watchedList.addAll(filteredList);
                 watchedAdapter.notifyDataSetChanged();
                 updateCounts();
             }
