@@ -44,7 +44,7 @@
             android:focusable="true"
             android:focusableInTouchMode="true"
             app:cursorColor="?attr/colorOnPrimary"
-            android:hint="Search Anime" />
+            android:hint="Search Show" />
 
         <ImageButton
             android:id="@+id/clear_search"
