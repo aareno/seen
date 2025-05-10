@@ -422,7 +422,7 @@ public class TvMoviesFragment extends Fragment {
     private void scheduleUpdatesForAllOngoingAnimes() {
         for (Show kdrama : watchingList) {
             if (kdrama.getAiringStatus() == Anime.AiringStatus.ONGOING) {
-                WorkScheduler.schedulePeriodicUpdate(requireContext(), kdrama.getId(), "kdrama");
+                WorkScheduler.schedulePeriodicUpdate(requireContext(), kdrama.getId(), "show");
             }
         }
     }

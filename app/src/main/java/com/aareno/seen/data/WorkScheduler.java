@@ -14,21 +14,39 @@ import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 
 public class WorkScheduler {
+    private static final String TAG = "WorkScheduler";
+    private static final String EPISODE_UPDATE_WORK_PREFIX = "episode_update_";
+    private static final String AIRING_WORK_NAME = "airing_notification_work";
     public static void schedulePeriodicUpdate(Context context, int contentId, String contentType) {
+        // Create a unique work name based on content type and ID
+        String uniqueWorkName = EPISODE_UPDATE_WORK_PREFIX + contentType + "_" + contentId;
+
         Data inputData = new Data.Builder()
                 .putInt("CONTENT_ID", contentId)
                 .putString("CONTENT_TYPE", contentType)
                 .build();
 
+        // Set constraints to require network connectivity
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+
+        // Create a periodic work request that runs every 12 hours
         PeriodicWorkRequest updateWorkRequest =
                 new PeriodicWorkRequest.Builder(EpisodeCountUpdateWorker.class, 12, TimeUnit.HOURS)
                         .setInputData(inputData)
+                        .setConstraints(constraints)
                         .build();
 
-        WorkManager.getInstance(context).enqueue(updateWorkRequest);
-    }
+        // Use enqueueUniquePeriodicWork to prevent duplicate scheduling
+        WorkManager.getInstance(context)
+                .enqueueUniquePeriodicWork(
+                        uniqueWorkName,
+                        ExistingPeriodicWorkPolicy.KEEP, // Don't replace if already scheduled
+                        updateWorkRequest);
 
-    private static final String AIRING_WORK_NAME = "airing_notification_work";
+        Log.d(TAG, "Scheduled periodic update for " + contentType + " ID: " + contentId);
+    }
 
     public static void scheduleAiringNotifications(Context context) {
         Log.d("WorkScheduler", "Scheduling airing notifications");

@@ -412,16 +412,19 @@ public class SearchKDramaActivity extends AppCompatActivity {
         });
     }
 
+    // Fixed method with null checks
     private Date parseDate(String dateString) {
-        if (dateString == null || dateString.isEmpty()) return null;
+        if (dateString == null || dateString.equals("null") || dateString.isEmpty()) {
+            return null; // Return null for invalid dates
+        }
 
         try {
-            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
             return format.parse(dateString);
         } catch (ParseException e) {
-            e.printStackTrace();
+            Log.w("SearchKDramaActivity", "Could not parse date: " + dateString, e);
+            return null; // Return null on parsing failure
         }
-        return null;
     }
 
     private int convertDayToInteger(String day) {

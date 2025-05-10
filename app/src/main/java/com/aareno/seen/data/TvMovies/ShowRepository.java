@@ -113,7 +113,7 @@ public class ShowRepository {
                     );
                 } else {
                     new Handler(Looper.getMainLooper()).post(() ->
-                            callback.onError(new Exception("KDrama not found"))
+                            callback.onError(new Exception("Show not found"))
                     );
                 }
             } catch (Exception e) {
