@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "650240569128",
+    "project_id": "seen-907b9",
+    "storage_bucket": "seen-907b9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:650240569128:android:9542e2b8199e6594f1ea1d",
+        "android_client_info": {
+          "package_name": "com.aareno.seen"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "650240569128-g2tu3g1g5u3iesr3t6118lt73umrdfk4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aareno.seen",
+            "certificate_hash": "dd1a3ed6dc203ab6c8f4880fbfea4b33713791a6"
+          }
+        },
+        {
+          "client_id": "650240569128-v088v12d38q0fhioi70k30v1e8gsqlb0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrtJUW4ZZkQVPFq6D0TcVHBvVwxcKQqZo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "650240569128-v088v12d38q0fhioi70k30v1e8gsqlb0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -60,6 +61,15 @@ dependencies {
 
     // Google Play services for auth
     implementation(libs.play.services.auth)
+
+    // Import the Firebase BoM
+    implementation(libs.firebase.bom)
+
+
+    // TODO: Add the dependencies for Firebase products you want to use
+    // When using the BoM, don't specify versions in Firebase dependencies
+    implementation(libs.firebase.analytics)
+
 
     // Add Guava
     implementation("com.google.guava:guava:32.1.3-android")
