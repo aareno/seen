@@ -17,15 +17,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.work.Data;
-import androidx.work.ExistingWorkPolicy;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.OutOfQuotaPolicy;
-import androidx.work.WorkInfo;
-import androidx.work.WorkManager;
-
-import com.aareno.seen.data.AiringCheckWorker;
-import com.aareno.seen.data.Anime.AnimeRepository;
 import com.aareno.seen.data.WorkScheduler;
 import com.aareno.seen.ui.Anime.Anime;
 import com.aareno.seen.ui.Anime.AnimeFragment;
@@ -40,9 +31,6 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.color.MaterialColors;
 
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity implements AnimeFragment.UndoListener, KDramaFragment.UndoListener, TvMoviesFragment.UndoListener {
     private static final int SEARCH_ANIME_REQUEST_CODE = 1001;
@@ -290,6 +278,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         }
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void onBackPressed() {
         Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);

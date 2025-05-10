@@ -32,10 +32,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.room.common.jvm)
-    implementation(libs.room.runtime.android)
-    val room_version = "2.7.1"
-
     // components
     implementation(libs.appcompat)
     implementation(libs.material)
@@ -43,12 +39,30 @@ dependencies {
     // OkHttp
     implementation(libs.okhttp)
     implementation(libs.workmanager)
+
     // Glide
     implementation(libs.gson)
     implementation(libs.glide)
-    annotationProcessor(libs.room.compiler)
 
     // database
+    annotationProcessor(libs.room.compiler)
+    implementation(libs.room.common.jvm)
+    implementation(libs.room.runtime.android)
+
+    // Firebase core
+    implementation(libs.firebase.core)
+
+    // Firebase Authentication (for Google Sign-In)
+    implementation(libs.firebase.auth)
+
+    // Firestore for data storage
+    implementation(libs.firebase.firestore)
+
+    // Google Play services for auth
+    implementation(libs.play.services.auth)
+
+    // Add Guava
+    implementation("com.google.guava:guava:32.1.3-android")
 
     // test
     testImplementation(libs.junit)

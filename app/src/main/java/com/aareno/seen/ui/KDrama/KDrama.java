@@ -1,6 +1,7 @@
 package com.aareno.seen.ui.KDrama;
 
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 
@@ -34,6 +35,7 @@ public class KDrama implements Serializable {
 
     public KDrama() {}
 
+    @Ignore
     public KDrama(int id, String titleEnglish, String titleKorean, String coverImageUrl, List<Integer> airingDays, Date startDate, Date endDate) {
         this.id = id;
         this.titleEnglish = titleEnglish != null ? titleEnglish : "";

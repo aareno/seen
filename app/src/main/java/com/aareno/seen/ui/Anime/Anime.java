@@ -1,6 +1,7 @@
 package com.aareno.seen.ui.Anime;
 
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 
@@ -42,6 +43,7 @@ public class Anime implements Serializable {
     // Default constructor for Room
     public Anime() {}
 
+    @Ignore
     public Anime(int id, String titleRomaji, String titleEnglish, String coverImageUrl,
                  int episodeCount, List<Integer> airingDays, Date startDate, Date endDate) {
         this.id = id;
