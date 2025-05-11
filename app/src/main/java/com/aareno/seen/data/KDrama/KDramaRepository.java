@@ -138,6 +138,25 @@ public class KDramaRepository {
         });
     }
 
+    /**
+     * Clears all KDrama entries from the local database.
+     * @param callback Callback to notify when the operation is complete
+     */
+    public void clearAllKDrama(OnDataLoadedCallback<Void> callback) {
+        executorService.execute(() -> {
+            try {
+                database.kDramaDao().deleteAllKDrama();
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onDataLoaded(null)
+                );
+            } catch (Exception e) {
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onError(e)
+                );
+            }
+        });
+    }
+
     public void shutdown() {
         executorService.shutdown();
     }

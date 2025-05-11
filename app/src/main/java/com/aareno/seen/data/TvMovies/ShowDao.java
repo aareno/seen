@@ -7,8 +7,6 @@ import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Update;
 
-import com.aareno.seen.ui.Anime.Anime;
-import com.aareno.seen.ui.KDrama.KDrama;
 import com.aareno.seen.ui.TvMovies.Show;
 
 import java.util.List;
@@ -31,4 +29,7 @@ public interface ShowDao {
 
     @Delete
     void delete(Show show);
+
+    @Query("DELETE FROM show")
+    void deleteAllShows();
 }

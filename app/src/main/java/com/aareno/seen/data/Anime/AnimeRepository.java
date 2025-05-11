@@ -133,6 +133,25 @@ public class AnimeRepository {
         });
     }
 
+    /**
+     * Clears all anime from the local database.
+     * @param callback Callback to notify when the operation is complete
+     */
+    public void clearAllAnime(OnDataLoadedCallback<Void> callback) {
+        executorService.execute(() -> {
+            try {
+                database.animeDao().deleteAllAnime();
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onDataLoaded(null)
+                );
+            } catch (Exception e) {
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onError(e)
+                );
+            }
+        });
+    }
+
     public void shutdown() {
         executorService.shutdown();
     }

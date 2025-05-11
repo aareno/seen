@@ -31,4 +31,6 @@ public interface KDramaDao {
     @Delete
     void delete(KDrama kdrama);
 
+    @Query("DELETE FROM kdrama")
+    void deleteAllKDrama();
 }

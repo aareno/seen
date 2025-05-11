@@ -23,6 +23,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import com.aareno.seen.auth.UserAuthManager;
+import com.aareno.seen.data.Anime.AnimeRepository;
+import com.aareno.seen.data.KDrama.KDramaRepository;
+import com.aareno.seen.data.TvMovies.ShowRepository;
 import com.aareno.seen.data.WorkScheduler;
 import com.aareno.seen.sync.DataSyncManager;
 import com.aareno.seen.ui.Anime.Anime;
@@ -40,6 +43,7 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MainActivity extends AppCompatActivity implements AnimeFragment.UndoListener, KDramaFragment.UndoListener, TvMoviesFragment.UndoListener {
     private static final int SEARCH_ANIME_REQUEST_CODE = 1001;
@@ -282,10 +286,12 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                 
                 // Now check if the user is already signed in for sign-out flow
                 if (userAuthManager.isUserSignedIn()) {
-                    // If already signed in, offer sign out
-                    userAuthManager.signOut(task -> {
-                        updateUIAfterSignOut();
-                        showMessage("Successfully signed out");
+                    // If already signed in, clear data and sign out
+                    clearAllUserData(() -> {
+                        userAuthManager.signOut(task -> {
+                            updateUIAfterSignOut();
+                            showMessage("Successfully signed out");
+                        });
                     });
                     return;
                 } 
@@ -717,6 +723,108 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
             showMessage("Signed in as " + displayName);
         } else {
             showMessage("Signed in successfully");
+        }
+        
+        // Sync data to restore the user's content
+        syncData();
+        
+        // Refresh fragments to display the synced data
+        refreshCurrentFragment();
+    }
+
+    // Helper method to clear all user data from local database
+    private void clearAllUserData(Runnable onComplete) {
+        showMessage("Clearing local data...");
+        
+        // Create repositories if they don't exist
+        AnimeRepository animeRepository = new AnimeRepository(this);
+        KDramaRepository kdramaRepository = new KDramaRepository(this);
+        ShowRepository showRepository = new ShowRepository(this);
+        
+        // Use atomic counter to track when all clear operations complete
+        AtomicInteger pendingOperations = new AtomicInteger(3);
+        
+        // Clear anime data
+        animeRepository.clearAllAnime(new AnimeRepository.OnDataLoadedCallback<Void>() {
+            @Override
+            public void onDataLoaded(Void data) {
+                Log.d("MainActivity", "Anime data cleared");
+                checkAllClearComplete(pendingOperations, onComplete);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e("MainActivity", "Error clearing anime data", e);
+                checkAllClearComplete(pendingOperations, onComplete);
+            }
+        });
+        
+        // Clear KDrama data
+        kdramaRepository.clearAllKDrama(new KDramaRepository.OnDataLoadedCallback<Void>() {
+            @Override
+            public void onDataLoaded(Void data) {
+                Log.d("MainActivity", "KDrama data cleared");
+                checkAllClearComplete(pendingOperations, onComplete);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e("MainActivity", "Error clearing KDrama data", e);
+                checkAllClearComplete(pendingOperations, onComplete);
+            }
+        });
+        
+        // Clear TV/Movies data
+        showRepository.clearAllShows(new ShowRepository.OnDataLoadedCallback<Void>() {
+            @Override
+            public void onDataLoaded(Void data) {
+                Log.d("MainActivity", "TV/Movies data cleared");
+                checkAllClearComplete(pendingOperations, onComplete);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e("MainActivity", "Error clearing TV/Movies data", e);
+                checkAllClearComplete(pendingOperations, onComplete);
+            }
+        });
+    }
+    
+    // Helper method to check if all clear operations have completed
+    private void checkAllClearComplete(AtomicInteger pendingOperations, Runnable onComplete) {
+        if (pendingOperations.decrementAndGet() == 0) {
+            // All operations complete, refresh UI to show empty lists
+            refreshCurrentFragment();
+            
+            // Run completion callback
+            if (onComplete != null) {
+                onComplete.run();
+            }
+        }
+    }
+    
+    // Helper method to refresh the current fragment
+    private void refreshCurrentFragment() {
+        Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+        
+        if (currentFragment instanceof AnimeFragment) {
+            // Reload the anime fragment
+            getSupportFragmentManager().beginTransaction()
+                    .detach(currentFragment)
+                    .attach(currentFragment)
+                    .commit();
+        } else if (currentFragment instanceof KDramaFragment) {
+            // Reload the KDrama fragment
+            getSupportFragmentManager().beginTransaction()
+                    .detach(currentFragment)
+                    .attach(currentFragment)
+                    .commit();
+        } else if (currentFragment instanceof TvMoviesFragment) {
+            // Reload the TV/Movies fragment
+            getSupportFragmentManager().beginTransaction()
+                    .detach(currentFragment)
+                    .attach(currentFragment)
+                    .commit();
         }
     }
 

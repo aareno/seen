@@ -100,6 +100,25 @@ public class ShowRepository {
             }
         });
     }
+    
+    /**
+     * Clears all shows from the local database.
+     * @param callback Callback to notify when the operation is complete
+     */
+    public void clearAllShows(OnDataLoadedCallback<Void> callback) {
+        executorService.execute(() -> {
+            try {
+                database.ShowDao().deleteAllShows();
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onDataLoaded(null)
+                );
+            } catch (Exception e) {
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onError(e)
+                );
+            }
+        });
+    }
 
     public void updateShowEpisodeCount(int showId, int newEpisodeCount, ShowRepository.OnDataLoadedCallback<Void> callback) {
         executorService.execute(() -> {

@@ -29,4 +29,7 @@ public interface AnimeDao {
 
     @Delete
     void delete(Anime anime);
+
+    @Query("DELETE FROM anime")
+    void deleteAllAnime();
 }
