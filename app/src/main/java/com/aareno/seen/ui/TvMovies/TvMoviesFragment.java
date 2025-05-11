@@ -372,6 +372,8 @@ public class TvMoviesFragment extends Fragment {
                         kdrama,
                         position
                 ));
+                // Delete from Firestore
+                com.aareno.seen.sync.DataSyncManager.deleteShowFromFirestore(requireContext(), kdrama.getId());
             }
 
             @Override
@@ -395,6 +397,8 @@ public class TvMoviesFragment extends Fragment {
                         kdrama,
                         position
                 ));
+                // Delete from Firestore
+                com.aareno.seen.sync.DataSyncManager.deleteShowFromFirestore(requireContext(), kdrama.getId());
             }
             @Override
             public void onError(Exception e) {

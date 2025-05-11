@@ -433,6 +433,8 @@ public class KDramaFragment extends Fragment {
                         kdrama,
                         position
                 ));
+                // Delete from Firestore
+                com.aareno.seen.sync.DataSyncManager.deleteKDramaFromFirestore(requireContext(), kdrama.getId());
             }
 
             @Override
@@ -456,6 +458,8 @@ public class KDramaFragment extends Fragment {
                         kdrama,
                         position
                 ));
+                // Delete from Firestore
+                com.aareno.seen.sync.DataSyncManager.deleteKDramaFromFirestore(requireContext(), kdrama.getId());
             }
 
             @Override

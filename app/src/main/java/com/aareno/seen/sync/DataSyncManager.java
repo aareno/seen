@@ -678,4 +678,48 @@ public class DataSyncManager {
             }
         });
     }
+
+    // --- Add these static helper methods at the end of the class ---
+
+    public static void deleteAnimeFromFirestore(Context context, int animeId) {
+        UserAuthManager auth = UserAuthManager.getInstance(context);
+        if (auth.isUserSignedIn()) {
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(auth.getUserId())
+                .collection("anime")
+                .document(String.valueOf(animeId))
+                .delete()
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Anime deleted from Firestore: " + animeId))
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to delete anime from Firestore: " + animeId, e));
+        }
+    }
+
+    public static void deleteKDramaFromFirestore(Context context, int kdramaId) {
+        UserAuthManager auth = UserAuthManager.getInstance(context);
+        if (auth.isUserSignedIn()) {
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(auth.getUserId())
+                .collection("kdrama")
+                .document(String.valueOf(kdramaId))
+                .delete()
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "KDrama deleted from Firestore: " + kdramaId))
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to delete kdrama from Firestore: " + kdramaId, e));
+        }
+    }
+
+    public static void deleteShowFromFirestore(Context context, int showId) {
+        UserAuthManager auth = UserAuthManager.getInstance(context);
+        if (auth.isUserSignedIn()) {
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(auth.getUserId())
+                .collection("shows")
+                .document(String.valueOf(showId))
+                .delete()
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Show deleted from Firestore: " + showId))
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to delete show from Firestore: " + showId, e));
+        }
+    }
 }

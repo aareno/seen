@@ -448,6 +448,8 @@ public class AnimeFragment extends Fragment {
                         anime,
                         position
                 ));
+                // Delete from Firestore
+                com.aareno.seen.sync.DataSyncManager.deleteAnimeFromFirestore(requireContext(), anime.getId());
             }
 
             @Override
@@ -471,6 +473,8 @@ public class AnimeFragment extends Fragment {
                         anime,
                         position
                 ));
+                // Delete from Firestore
+                com.aareno.seen.sync.DataSyncManager.deleteAnimeFromFirestore(requireContext(), anime.getId());
             }
 
             @Override
