@@ -509,26 +509,23 @@ public class DataSyncManager {
         AtomicInteger pendingOperations = new AtomicInteger(0);
         final boolean[] success = {true};
 
-        // Handle local items not in cloud (upload to cloud)
+        // Always upload local items to Firestore (merge to update fields)
         for (Map.Entry<Integer, T> entry : localItems.entrySet()) {
             Integer itemId = entry.getKey();
             T localItem = entry.getValue();
 
-            if (!cloudItems.containsKey(itemId)) {
-                // Item exists locally but not in cloud - upload
-                pendingOperations.incrementAndGet();
-                collection.document(itemId.toString())
-                        .set(localItem)
-                        .addOnSuccessListener(aVoid -> {
-                            Log.d(TAG, "Successfully uploaded " + itemType + " id: " + itemId);
-                            checkCompletion(pendingOperations, success, callback);
-                        })
-                        .addOnFailureListener(e -> {
-                            Log.e(TAG, "Error uploading " + itemType + " id: " + itemId, e);
-                            success[0] = false;
-                            checkCompletion(pendingOperations, success, callback);
-                        });
-            }
+            pendingOperations.incrementAndGet();
+            collection.document(itemId.toString())
+                    .set(localItem, SetOptions.merge())
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "Uploaded/updated " + itemType + " id: " + itemId);
+                        checkCompletion(pendingOperations, success, callback);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error uploading " + itemType + " id: " + itemId, e);
+                        success[0] = false;
+                        checkCompletion(pendingOperations, success, callback);
+                    });
         }
 
         // Handle cloud items not in local (download to local)

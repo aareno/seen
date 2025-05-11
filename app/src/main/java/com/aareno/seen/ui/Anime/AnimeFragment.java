@@ -249,7 +249,10 @@ public class AnimeFragment extends Fragment {
             @Override
             public void onDataLoaded(Void data) {
                 Log.d(TAG, "Updated episode count for: " + anime.getTitleRomaji());
-                // No UI update needed if only updating episode count within already listed items
+                // Trigger sync to Firebase after local update
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).syncData();
+                }
             }
 
             @Override

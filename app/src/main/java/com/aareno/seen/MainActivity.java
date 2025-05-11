@@ -757,7 +757,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
     }
 
     // Modified to accept a callback that runs after sync completes
-    private void syncData() {
+    public void syncData() {
         syncData(null);
     }
 
