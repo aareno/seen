@@ -776,7 +776,6 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
             Log.w("MainActivity", "Running on emulator - some Firebase features may not work properly");
         }
 
-        showMessage("Syncing data...");
         dataSyncManager.syncData(success -> {
             // Call the after-sync callback if provided
             if (afterSyncCallback != null) {

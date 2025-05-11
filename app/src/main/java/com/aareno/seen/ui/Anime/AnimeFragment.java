@@ -450,8 +450,11 @@ public class AnimeFragment extends Fragment {
                 ));
                 // Delete from Firestore
                 com.aareno.seen.sync.DataSyncManager.deleteAnimeFromFirestore(requireContext(), anime.getId());
+                // Cancel scheduled update if ongoing
+                if (anime.getAiringStatus() == Anime.AiringStatus.ONGOING) {
+                    com.aareno.seen.data.WorkScheduler.cancelPeriodicUpdate(requireContext(), anime.getId(), "anime");
+                }
             }
-
             @Override
             public void onError(Exception e) {
                 showErrorMessage("Failed to delete anime");
@@ -475,8 +478,11 @@ public class AnimeFragment extends Fragment {
                 ));
                 // Delete from Firestore
                 com.aareno.seen.sync.DataSyncManager.deleteAnimeFromFirestore(requireContext(), anime.getId());
+                // Cancel scheduled update if ongoing
+                if (anime.getAiringStatus() == Anime.AiringStatus.ONGOING) {
+                    com.aareno.seen.data.WorkScheduler.cancelPeriodicUpdate(requireContext(), anime.getId(), "anime");
+                }
             }
-
             @Override
             public void onError(Exception e) {
                 showErrorMessage("Failed to delete anime");

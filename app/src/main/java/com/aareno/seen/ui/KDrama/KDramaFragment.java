@@ -435,8 +435,11 @@ public class KDramaFragment extends Fragment {
                 ));
                 // Delete from Firestore
                 com.aareno.seen.sync.DataSyncManager.deleteKDramaFromFirestore(requireContext(), kdrama.getId());
+                // Cancel scheduled update if ongoing
+                if (kdrama.getAiringStatus() == com.aareno.seen.ui.Anime.Anime.AiringStatus.ONGOING) {
+                    com.aareno.seen.data.WorkScheduler.cancelPeriodicUpdate(requireContext(), kdrama.getId(), "kdrama");
+                }
             }
-
             @Override
             public void onError(Exception e) {
                 showErrorMessage("Failed to delete anime");
@@ -460,8 +463,11 @@ public class KDramaFragment extends Fragment {
                 ));
                 // Delete from Firestore
                 com.aareno.seen.sync.DataSyncManager.deleteKDramaFromFirestore(requireContext(), kdrama.getId());
+                // Cancel scheduled update if ongoing
+                if (kdrama.getAiringStatus() == com.aareno.seen.ui.Anime.Anime.AiringStatus.ONGOING) {
+                    com.aareno.seen.data.WorkScheduler.cancelPeriodicUpdate(requireContext(), kdrama.getId(), "kdrama");
+                }
             }
-
             @Override
             public void onError(Exception e) {
                 showErrorMessage("Failed to delete anime");
