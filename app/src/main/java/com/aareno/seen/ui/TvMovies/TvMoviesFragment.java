@@ -426,6 +426,36 @@ public class TvMoviesFragment extends Fragment {
             }
         }
     }
+    
+    /**
+     * Reloads all data from the repository
+     * Called when the user signs in or out to refresh the UI
+     */
+    public void reloadData() {
+        if (isAdded()) {
+            // Clear current lists
+            watchingList.clear();
+            watchedList.clear();
+            originalWatchingList.clear();
+            originalWatchedList.clear();
+            
+            // Reload data from repository
+            loadAnimeLists();
+            
+            // Update UI
+            if (watchingAdapter != null) {
+                watchingAdapter.notifyDataSetChanged();
+            }
+            if (watchedAdapter != null) {
+                watchedAdapter.notifyDataSetChanged();
+            }
+            updateCounts();
+            
+            Log.d(TAG, "TvMoviesFragment data reloaded");
+        } else {
+            Log.d(TAG, "TvMoviesFragment not attached, skipping reload");
+        }
+    }
 
     /* Undo Logic */
 

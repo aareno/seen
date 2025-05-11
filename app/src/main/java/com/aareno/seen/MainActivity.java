@@ -725,11 +725,110 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
             showMessage("Signed in successfully");
         }
         
-        // Sync data to restore the user's content
-        syncData();
+        // Sync data to restore the user's content and refresh the UI when done
+        syncData(success -> {
+            if (success) {
+                showMessage("Data sync completed");
+            }
+            // Always refresh the UI regardless of sync success
+            refreshAllFragments();
+        });
+    }
+
+    private void updateUIAfterSignOut() {
+        if (signInButton != null) {
+            signInButton.setText("Sign In");
+        }
         
-        // Refresh fragments to display the synced data
+        // Refresh all fragments to show empty state
+        refreshAllFragments();
+        
+        showMessage("Signed out successfully");
+    }
+
+    // Helper method to show error message
+    private void showAuthError(String message) {
+        showMessage("Authentication failed: " + message);
+    }
+
+    // Helper method to display a message to the user
+    private void showMessage(String message) {
+        Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG).show();
+    }
+
+    // Modified to accept a callback that runs after sync completes
+    private void syncData() {
+        syncData(null);
+    }
+
+    private void syncData(DataSyncManager.SyncCallback afterSyncCallback) {
+        if (dataSyncManager == null || userAuthManager == null || !userAuthManager.isUserSignedIn()) {
+            Log.d("SyncData", "Cannot sync: Data sync manager not initialized or user not signed in");
+            if (afterSyncCallback != null) {
+                afterSyncCallback.onSyncComplete(false);
+            }
+            return;
+        }
+
+        // Add detection for emulator
+        boolean isEmulator = isEmulator();
+        if (isEmulator) {
+            Log.w("MainActivity", "Running on emulator - some Firebase features may not work properly");
+        }
+
+        showMessage("Syncing data...");
+        dataSyncManager.syncData(success -> {
+            // Call the after-sync callback if provided
+            if (afterSyncCallback != null) {
+                afterSyncCallback.onSyncComplete(success);
+            }
+        });
+    }
+    
+    // Helper method to refresh the current fragment
+    private void refreshCurrentFragment() {
+        Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+        
+        if (currentFragment instanceof AnimeFragment) {
+            ((AnimeFragment) currentFragment).reloadData();
+            Log.d("MainActivity", "Refreshing AnimeFragment data");
+        } else if (currentFragment instanceof KDramaFragment) {
+            ((KDramaFragment) currentFragment).reloadData();
+            Log.d("MainActivity", "Refreshing KDramaFragment data");
+        } else if (currentFragment instanceof TvMoviesFragment) {
+            ((TvMoviesFragment) currentFragment).reloadData();
+            Log.d("MainActivity", "Refreshing TvMoviesFragment data");
+        }
+    }
+    
+    // Method to refresh all fragments (not just the current one)
+    private void refreshAllFragments() {
+        // Refresh the current fragment first for immediate visual feedback
         refreshCurrentFragment();
+        
+        // Force initialization of all fragments if they haven't been created yet
+        if (animeFragment == null) {
+            animeFragment = new AnimeFragment();
+        }
+        if (kdramaFragment == null) {
+            kdramaFragment = new KDramaFragment();
+        }
+        if (TvMoviesFragment == null) {
+            TvMoviesFragment = new TvMoviesFragment();
+        }
+        
+        // Check if fragments are attached before trying to reload
+        if (animeFragment.isAdded()) {
+            animeFragment.reloadData();
+        }
+        if (kdramaFragment.isAdded()) {
+            kdramaFragment.reloadData();
+        }
+        if (TvMoviesFragment.isAdded()) {
+            TvMoviesFragment.reloadData();
+        }
+        
+        Log.d("MainActivity", "Refreshed all fragments");
     }
 
     // Helper method to clear all user data from local database
@@ -794,7 +893,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
     private void checkAllClearComplete(AtomicInteger pendingOperations, Runnable onComplete) {
         if (pendingOperations.decrementAndGet() == 0) {
             // All operations complete, refresh UI to show empty lists
-            refreshCurrentFragment();
+            refreshAllFragments();
             
             // Run completion callback
             if (onComplete != null) {
@@ -803,101 +902,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         }
     }
     
-    // Helper method to refresh the current fragment
-    private void refreshCurrentFragment() {
-        Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
-        
-        if (currentFragment instanceof AnimeFragment) {
-            // Reload the anime fragment
-            getSupportFragmentManager().beginTransaction()
-                    .detach(currentFragment)
-                    .attach(currentFragment)
-                    .commit();
-        } else if (currentFragment instanceof KDramaFragment) {
-            // Reload the KDrama fragment
-            getSupportFragmentManager().beginTransaction()
-                    .detach(currentFragment)
-                    .attach(currentFragment)
-                    .commit();
-        } else if (currentFragment instanceof TvMoviesFragment) {
-            // Reload the TV/Movies fragment
-            getSupportFragmentManager().beginTransaction()
-                    .detach(currentFragment)
-                    .attach(currentFragment)
-                    .commit();
-        }
-    }
-
-    private void updateUIAfterSignOut() {
-        if (signInButton != null) {
-            signInButton.setText("Sign In");
-        }
-    }
-
-    private void showAuthError(String message) {
-        showMessage("Authentication failed: " + message);
-    }
-
-    private void showMessage(String message) {
-        Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG).show();
-    }
-
-    private void syncData() {
-        if (dataSyncManager == null || userAuthManager == null || !userAuthManager.isUserSignedIn()) {
-            Log.d("SyncData", "Cannot sync: Data sync manager not initialized or user not signed in");
-            return;
-        }
-
-        // Add detection for emulator
-        boolean isEmulator = isEmulator();
-        if (isEmulator) {
-            Log.w("MainActivity", "Running on emulator - some Firebase features may not work properly");
-        }
-
-        showMessage("Syncing data...");
-        dataSyncManager.syncData(success -> {
-            if (success) {
-                showMessage("Data sync completed");
-            } else {
-                // Customize message based on whether we're on emulator
-                if (isEmulator) {
-                    String errorMsg = "Sync failed. Emulators often have issues with Firebase. " +
-                                      "Consider testing on a physical device.";
-                    showMessage(errorMsg);
-                    
-                    // Show a more detailed dialog
-                    android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
-                    builder.setTitle("Emulator Detected")
-                           .setMessage("You're running on an emulator which may have limited Google Play Services " +
-                                      "support. For full Firebase functionality, use a physical device or " +
-                                      "an emulator with Google Play Services.")
-                           .setPositiveButton("OK", null)
-                           .show();
-                } else {
-                    // Show a more detailed error with options to fix Firestore
-                    android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
-                    builder.setTitle("Firestore Configuration Required")
-                          .setMessage("There are a few possible issues to fix:\n\n" +
-                                     "1. Firestore API might not be enabled\n" +
-                                     "2. Firestore security rules may need configuration\n\n" +
-                                     "Would you like to open Firebase Console to fix these issues?")
-                          .setPositiveButton("Open Firebase Console", (dialog, which) -> {
-                              String url = "https://console.firebase.google.com/project/seen-907b9/firestore/rules";
-                              Intent intent = new Intent(Intent.ACTION_VIEW);
-                              intent.setData(android.net.Uri.parse(url));
-                              startActivity(intent);
-                          })
-                          .setNeutralButton("View Guide", (dialog, which) -> {
-                              showFirestoreSetupGuide();
-                          })
-                          .setNegativeButton("Cancel", null)
-                          .show();
-                }
-            }
-        });
-    }
-
-    // Add this method to show the setup guide
+    // Helper method to show the setup guide
     private void showFirestoreSetupGuide() {
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
         builder.setTitle("Firestore Setup Guide")
