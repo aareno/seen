@@ -55,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
     private SettingsFragment settingsFragment;
     private ImageButton undoButton;
     private ImageButton btnSettings;
+    private ImageButton btnAdd; // Add this as a field
 
     private BottomNavigationView bottomNavigation;
     private boolean isInSettings = false;
@@ -192,7 +193,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
 
         applyUserSettings();
 
-        ImageButton btnAdd = findViewById(R.id.btn_add);
+        btnAdd = findViewById(R.id.btn_add); // assign to field
         if (btnAdd != null) {
             btnAdd.setOnClickListener(v -> {
                 Fragment currentFragment = getSupportFragmentManager()
@@ -215,6 +216,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                     startActivityForResult(intent, SEARCH_TVMOVIES_REQUEST_CODE);
                 }
             });
+            btnAdd.setVisibility(View.VISIBLE); // ensure visible on startup
         }
 
         if (savedInstanceState == null) {
@@ -258,13 +260,13 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         if (undoButton != null) {
             undoButton.setVisibility(View.GONE);
         }
-
         if (btnSettings != null) {
             btnSettings.setImageResource(R.drawable.back);
         }
-
+        if (btnAdd != null) {
+            btnAdd.setVisibility(View.GONE); // Hide add button in settings
+        }
         isInSettings = true;
-
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container, settingsFragment)
                 .addToBackStack(null)
@@ -275,11 +277,12 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         if (undoButton != null) {
             undoButton.setVisibility(View.VISIBLE);
         }
-
         if (btnSettings != null) {
             btnSettings.setImageResource(R.drawable.settings);
         }
-
+        if (btnAdd != null) {
+            btnAdd.setVisibility(View.VISIBLE); // Show add button when leaving settings
+        }
         isInSettings = false;
     }
 
