@@ -22,11 +22,23 @@
             android:layout_marginBottom="10dp" />
     </androidx.appcompat.widget.Toolbar>
 
-    <!-- Container for search bar and clear button -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="8dp">
+
+        <ImageButton
+            android:id="@+id/search_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/search"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/abc_search_hint"
+            android:scaleType="centerInside"
+            android:padding="0dp"
+            android:layout_marginEnd="8dp" />
 
         <EditText
             android:id="@+id/search_edit_text"
@@ -39,20 +51,17 @@
             android:textCursorDrawable="@drawable/cursor_color"
             android:backgroundTint="?attr/colorOnPrimary"
             android:textColor="?attr/colorOnPrimary"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            app:cursorColor="?attr/colorOnPrimary"
-            android:hint="Search KDrama" />
+            android:hint="Search kdrama in list"
+            android:paddingVertical="8dp" />
 
         <ImageButton
             android:id="@+id/clear_search"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="10dp" />
+            android:padding="0dp"
+            android:layout_marginStart="8dp" />
     </LinearLayout>
 
     <androidx.core.widget.NestedScrollView
