@@ -37,6 +37,7 @@ public class SettingsFragment extends Fragment {
     private CheckBox kdramaTabCheckbox;
     private CheckBox tvMoviesTabCheckbox;
     private boolean tabSettingsChanged = false;
+    private Button signInButtonSettings;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -53,7 +54,7 @@ public class SettingsFragment extends Fragment {
         kdramaTabCheckbox = view.findViewById(R.id.kdramaTabCheckbox);
         tvMoviesTabCheckbox = view.findViewById(R.id.tvMoviesTabCheckbox);
         adultContentSwitch = view.findViewById(R.id.adultContentSwitch);
-
+        signInButtonSettings = view.findViewById(R.id.btn_sign_in_settings);
 
         /*
         Button testButton = view.findViewById(R.id.test_notification_button);
@@ -76,7 +77,7 @@ public class SettingsFragment extends Fragment {
 
         // Set up listeners
         setupListeners();
-
+        setupSignInButton();
         return view;
     }
 
@@ -276,4 +277,77 @@ public class SettingsFragment extends Fragment {
         // refreshContent();
     }
 
+    public void setupSignInButton() {
+        // Set initial text
+        boolean isSignedIn = false;
+        if (getActivity() instanceof MainActivity) {
+            MainActivity main = (MainActivity) getActivity();
+            isSignedIn = main.userAuthManager != null && main.userAuthManager.isUserSignedIn();
+        }
+        signInButtonSettings.setText(isSignedIn ? "Sign Out" : "Sign In");
+
+        signInButtonSettings.setOnClickListener(v -> {
+            if (getActivity() instanceof MainActivity) {
+                MainActivity main = (MainActivity) getActivity();
+                if (main.userAuthManager != null && main.userAuthManager.isUserSignedIn()) {
+                    // Sign out
+                    main.clearAllUserData(() -> {
+                        main.userAuthManager.signOut(task -> {
+                            main.updateUIAfterSignOut();
+                            main.showMessage("Successfully signed out");
+                            // Update button text
+                            signInButtonSettings.setText("Sign In With Google");
+                        });
+                    });
+                } else {
+                    // Sign in
+                    // Re-check Google Play Services
+                    com.google.android.gms.common.GoogleApiAvailability googleApi =
+                            com.google.android.gms.common.GoogleApiAvailability.getInstance();
+                    int resultCode = googleApi.isGooglePlayServicesAvailable(requireContext());
+                    if (resultCode != com.google.android.gms.common.ConnectionResult.SUCCESS) {
+                        if (googleApi.isUserResolvableError(resultCode)) {
+                            googleApi.getErrorDialog(requireActivity(), resultCode, 9000).show();
+                        } else {
+                            Toast.makeText(requireContext(),
+                                    "Google Play Services is required but not available on this device",
+                                    Toast.LENGTH_LONG).show();
+                        }
+                        return;
+                    }
+                    if (main.signInLauncher == null) {
+                        Toast.makeText(requireContext(),
+                                "Sign-in functionality is not available",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    try {
+                        Intent signInIntent = main.userAuthManager.getSignInIntent();
+                        if (signInIntent.resolveActivity(requireContext().getPackageManager()) != null) {
+                            main.signInLauncher.launch(signInIntent);
+                        } else {
+                            Toast.makeText(requireContext(),
+                                    "Google Sign-In is not available on this device",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (Exception e) {
+                        Toast.makeText(requireContext(),
+                                "Failed to start sign-in: " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Update sign in/out button text when returning to settings
+        if (signInButtonSettings != null && getActivity() instanceof MainActivity) {
+            MainActivity main = (MainActivity) getActivity();
+            boolean isSignedIn = main.userAuthManager != null && main.userAuthManager.isUserSignedIn();
+            signInButtonSettings.setText(isSignedIn ? "Sign Out" : "Sign In");
+        }
+    }
 }

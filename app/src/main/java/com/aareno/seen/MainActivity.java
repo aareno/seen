@@ -55,14 +55,13 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
     private SettingsFragment settingsFragment;
     private ImageButton undoButton;
     private ImageButton btnSettings;
-    private Button signInButton;
 
     private BottomNavigationView bottomNavigation;
     private boolean isInSettings = false;
 
-    private UserAuthManager userAuthManager;
+    public UserAuthManager userAuthManager;
     private DataSyncManager dataSyncManager;
-    private ActivityResultLauncher<Intent> signInLauncher;
+    public ActivityResultLauncher<Intent> signInLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -252,96 +251,6 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                 }
             });
             undoButton.setEnabled(false);
-        }
-
-        // Add sign-in button
-        signInButton = findViewById(R.id.btn_sign_in);
-        if (signInButton != null) {
-            signInButton.setOnClickListener(v -> {
-                // Re-check Google Play Services on button click to catch runtime changes
-                com.google.android.gms.common.GoogleApiAvailability googleApi = 
-                        com.google.android.gms.common.GoogleApiAvailability.getInstance();
-                int resultCode = googleApi.isGooglePlayServicesAvailable(this);
-                
-                if (resultCode != com.google.android.gms.common.ConnectionResult.SUCCESS) {
-                    Log.d("MainActivity", "Google Play Services unavailable, prompting user");
-                    if (googleApi.isUserResolvableError(resultCode)) {
-                        googleApi.getErrorDialog(this, resultCode, 9000).show();
-                        return;
-                    } else {
-                        Toast.makeText(MainActivity.this, 
-                                "Google Play Services is required but not available on this device", 
-                                Toast.LENGTH_LONG).show();
-                        return;
-                    }
-                }
-                
-                // Check userAuthManager first
-                if (userAuthManager == null) {
-                    Toast.makeText(MainActivity.this, 
-                            "Authentication service is not available", 
-                            Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                
-                // Now check if the user is already signed in for sign-out flow
-                if (userAuthManager.isUserSignedIn()) {
-                    // If already signed in, clear data and sign out
-                    clearAllUserData(() -> {
-                        userAuthManager.signOut(task -> {
-                            updateUIAfterSignOut();
-                            showMessage("Successfully signed out");
-                        });
-                    });
-                    return;
-                } 
-                
-                // Check signInLauncher separately for sign-in flow
-                if (signInLauncher == null) {
-                    Log.e("MainActivity", "Cannot sign in: signInLauncher is null");
-                    Toast.makeText(MainActivity.this, 
-                            "Sign-in functionality is not available", 
-                            Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                
-                // Start sign-in flow only if launcher is not null
-                try {
-                    Intent signInIntent = userAuthManager.getSignInIntent();
-                    Log.d("MainActivity", "Launching sign-in intent");
-                    
-                    // Print SHA-1 fingerprint to help with debugging
-                    try {
-                        android.content.pm.PackageInfo packageInfo = getPackageManager().getPackageInfo(
-                                getPackageName(), android.content.pm.PackageManager.GET_SIGNATURES);
-                        for (android.content.pm.Signature signature : packageInfo.signatures) {
-                            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
-                            md.update(signature.toByteArray());
-                            String shaString = android.util.Base64.encodeToString(md.digest(), 
-                                    android.util.Base64.DEFAULT);
-                            Log.d("MainActivity", "SHA-1 for this build: " + shaString);
-                        }
-                    } catch (Exception e) {
-                        Log.e("MainActivity", "Error getting SHA-1", e);
-                    }
-                    
-                    // Check if the intent is properly configured
-                    if (signInIntent.resolveActivity(getPackageManager()) != null) {
-                        Log.d("MainActivity", "Intent can be resolved by an activity");
-                        signInLauncher.launch(signInIntent);
-                    } else {
-                        Log.e("MainActivity", "No activity can handle the sign-in intent");
-                        Toast.makeText(MainActivity.this,
-                                "Google Sign-In is not available on this device",
-                                Toast.LENGTH_SHORT).show();
-                    }
-                } catch (Exception e) {
-                    Log.e("MainActivity", "Error launching sign-in flow", e);
-                    Toast.makeText(MainActivity.this,
-                            "Failed to start sign-in: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
-                }
-            });
         }
     }
 
@@ -713,11 +622,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         return prefs.getBoolean("show_adult_content", false);
     }
 
-    private void updateUIAfterAuth(FirebaseUser user) {
-        if (signInButton != null) {
-            signInButton.setText("Sign Out");
-        }
-
+    public void updateUIAfterAuth(FirebaseUser user) {
         String displayName = user.getDisplayName();
         if (displayName != null && !displayName.isEmpty()) {
             showMessage("Signed in as " + displayName);
@@ -735,11 +640,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         });
     }
 
-    private void updateUIAfterSignOut() {
-        if (signInButton != null) {
-            signInButton.setText("Sign In");
-        }
-        
+    public void updateUIAfterSignOut() {
         // Refresh all fragments to show empty state
         refreshAllFragments();
         
@@ -752,7 +653,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
     }
 
     // Helper method to display a message to the user
-    private void showMessage(String message) {
+    public void showMessage(String message) {
         Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG).show();
     }
 
@@ -831,7 +732,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
     }
 
     // Helper method to clear all user data from local database
-    private void clearAllUserData(Runnable onComplete) {
+    public void clearAllUserData(Runnable onComplete) {
         showMessage("Clearing local data...");
         
         // Create repositories if they don't exist
@@ -971,11 +872,6 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                 Log.e("MainActivity", errorMessage);
                 
                 // Disable sign-in button if Play Services is not available
-                if (signInButton != null) {
-                    signInButton.setEnabled(false);
-                    signInButton.setText("Sign-In Unavailable");
-                }
-                
                 // Create a detailed error dialog with information about the emulator
                 android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
                 builder.setTitle("Google Play Services Required")
@@ -998,10 +894,6 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                 enableOfflineMode();
             } else {
                 // Make sure sign-in button is enabled if Play Services is available
-                if (signInButton != null) {
-                    signInButton.setEnabled(true);
-                    signInButton.setText("Sign In");
-                }
             }
         } catch (Exception e) {
             Log.e("MainActivity", "Error checking Google Play Services", e);

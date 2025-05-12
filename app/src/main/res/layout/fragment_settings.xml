@@ -114,4 +114,12 @@
         android:textColor="?android:attr/textColorSecondary"
         android:text="Version 1.0"/>
 
+    <!-- Sign In / Sign Out Button -->
+    <Button
+        android:id="@+id/btn_sign_in_settings"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sign In With Google"
+        android:layout_marginTop="32dp"
+        android:textSize="16sp"/>
 </LinearLayout>
