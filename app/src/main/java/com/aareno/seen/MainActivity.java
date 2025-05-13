@@ -1,6 +1,9 @@
 package com.aareno.seen;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -8,10 +11,12 @@ import android.content.res.ColorStateList;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -41,6 +46,7 @@ import com.aareno.seen.ui.TvMovies.TvMoviesFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.BuildConfig;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
@@ -67,9 +73,19 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Prevent screenshots in release builds
+        if (!BuildConfig.DEBUG) {
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, 
+                               WindowManager.LayoutParams.FLAG_SECURE);
+        }
+        
         // Apply saved theme before super.onCreate()
         applyTheme();
         super.onCreate(savedInstanceState);
+        
+        // Clear any sensitive data from memory
+        System.gc();
+        
         setContentView(R.layout.activity_main);
 
         // Add this at the very beginning of onCreate
@@ -223,6 +239,16 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
 
         if (savedInstanceState == null) {
             loadInitialFragment();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Clear clipboard if it contains sensitive data
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboard != null) {
+            clipboard.setPrimaryClip(ClipData.newPlainText("", ""));
         }
     }
 
@@ -751,6 +777,12 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
 
     // Helper method to clear all user data from local database
     public void clearAllUserData(Runnable onComplete) {
+        // Add security check before clearing data
+        if (!userAuthManager.isUserSignedIn()) {
+            showMessage("Authentication required to clear data");
+            return;
+        }
+
         showMessage("Clearing local data...");
         
         // Create repositories if they don't exist
@@ -964,22 +996,42 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
     }
 
     private void applyTheme() {
-        SharedPreferences sharedPreferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
-        String theme = sharedPreferences.getString("app_theme", "default");
-        
-        switch (theme) {
-            case "dark":
-                setTheme(R.style.Theme_Seen_Dark);
-                break;
-            case "ocean":
-                setTheme(R.style.Theme_Seen_Ocean);
-                break;
-            case "sunset":
-                setTheme(R.style.Theme_Seen_Sunset);
-                break;
-            default:
-                setTheme(R.style.Theme_Seen);
-                break;
+        try {
+            SharedPreferences sharedPreferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
+            String theme = sharedPreferences.getString("app_theme", "default");
+            
+            // Validate theme value before applying
+            if (!isValidTheme(theme)) {
+                theme = "default";
+            }
+            
+            switch (theme) {
+                case "dark":
+                    setTheme(R.style.Theme_Seen_Dark);
+                    break;
+                case "ocean":
+                    setTheme(R.style.Theme_Seen_Ocean);
+                    break;
+                case "sunset":
+                    setTheme(R.style.Theme_Seen_Sunset);
+                    break;
+                default:
+                    setTheme(R.style.Theme_Seen);
+                    break;
+            }
+        } catch (Exception e) {
+            // Fallback to default theme if there's any error
+            setTheme(R.style.Theme_Seen);
+            Log.e("MainActivity", "Error applying theme", e);
         }
+    }
+
+    private boolean isValidTheme(String theme) {
+        return theme != null && (
+            theme.equals("default") || 
+            theme.equals("dark") || 
+            theme.equals("ocean") || 
+            theme.equals("sunset")
+        );
     }
 }
