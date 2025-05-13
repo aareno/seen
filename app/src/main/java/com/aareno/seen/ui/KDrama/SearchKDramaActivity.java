@@ -46,6 +46,8 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import java.util.concurrent.TimeUnit;
+
 public class SearchKDramaActivity extends AppCompatActivity {
     private static final String TAG = "SearchKDramaActivity";
 
@@ -306,21 +308,52 @@ public class SearchKDramaActivity extends AppCompatActivity {
 
     // Helper method to determine if content is mature
     private boolean isMatureContent(JSONObject showObject) {
-// If there's an IMDb ID, check with OMDb
-        if (showObject.has("externals")) {
-            JSONObject externals = showObject.optJSONObject("externals");
-            if (externals != null) {
-                String imdbId = externals.optString("imdb");
-                String omdbRating = fetchOMDbRating(imdbId);
-                if (omdbRating != null) {
-// Common adult ratings:
-                    List adultRatings = Arrays.asList("R", "NC-17", "TV-MA", "X", "UNRATED");
-                    if (adultRatings.contains(omdbRating.toUpperCase())) {
+        try {
+            // If there's an IMDb ID, check with OMDb
+            if (showObject.has("externals")) {
+                JSONObject externals = showObject.optJSONObject("externals");
+                if (externals != null) {
+                    String imdbId = externals.optString("imdb");
+                    if (imdbId != null && !imdbId.isEmpty()) {
+                        String omdbRating = fetchOMDbRating(imdbId);
+                        if (omdbRating != null) {
+                            // Common adult ratings
+                            List<String> adultRatings = Arrays.asList("R", "NC-17", "TV-MA", "X", "UNRATED");
+                            if (adultRatings.contains(omdbRating.toUpperCase())) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Fallback: Check if the show's summary or genre contains mature content indicators
+            String summary = showObject.optString("summary", "").toLowerCase();
+            JSONArray genres = showObject.optJSONArray("genres");
+            
+            // Keywords that might indicate mature content
+            List<String> matureKeywords = Arrays.asList("mature", "adult", "violence", "gore", "sexual");
+            
+            // Check summary for mature keywords
+            for (String keyword : matureKeywords) {
+                if (summary.contains(keyword)) {
+                    return true;
+                }
+            }
+
+            // Check genres for mature indicators
+            if (genres != null) {
+                for (int i = 0; i < genres.length(); i++) {
+                    String genre = genres.getString(i).toLowerCase();
+                    if (genre.contains("adult") || genre.contains("mature")) {
                         return true;
                     }
                 }
             }
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking mature content: " + e.getMessage());
         }
+        
         return false;
     }
 
@@ -328,23 +361,39 @@ public class SearchKDramaActivity extends AppCompatActivity {
         if (imdbId == null || imdbId.isEmpty()) {
             return null;
         }
-        OkHttpClient client = new OkHttpClient();
 
-// Construct your OMDb query URL
-// (Replace YOUR_OMDB_API_KEY with an actual key you obtain from https://www.omdbapi.com/)
+        // Check network connectivity first
+        if (!isNetworkAvailable()) {
+            Log.w(TAG, "No network connection available");
+            return null;
+        }
+
+        // Create OkHttpClient with timeouts
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .build();
+
+        // Construct your OMDb query URL with HTTPS
         String url = "https://www.omdbapi.com/?i=" + imdbId + "&apikey=18f70c59";
 
-        Request request = new Request.Builder().url(url).get().build();
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+
         try {
+            // Make the request asynchronously
             Response response = client.newCall(request).execute();
-            if (response.isSuccessful()) {
+            if (response.isSuccessful() && response.body() != null) {
                 String body = response.body().string();
                 JSONObject omdbJson = new JSONObject(body);
-                // The "Rated" field in OMDb might look like "PG-13", "R", "TV-MA", etc.
                 return omdbJson.optString("Rated", "N/A");
             }
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            Log.e(TAG, "Error fetching OMDB rating: " + e.getMessage());
+        } catch (JSONException e) {
+            Log.e(TAG, "Error parsing OMDB response: " + e.getMessage());
         }
         return null;
     }
@@ -445,5 +494,15 @@ public class SearchKDramaActivity extends AppCompatActivity {
         latestRecyclerView.setVisibility(isSearching ? View.GONE : View.VISIBLE);
         searchResultsTitle.setVisibility(isSearching ? View.VISIBLE : View.GONE);
         recyclerView.setVisibility(isSearching ? View.VISIBLE : View.GONE);
+    }
+
+    private boolean isNetworkAvailable() {
+        android.net.ConnectivityManager connectivityManager = (android.net.ConnectivityManager) 
+            getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager != null) {
+            android.net.NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+            return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+        }
+        return false;
     }
 }

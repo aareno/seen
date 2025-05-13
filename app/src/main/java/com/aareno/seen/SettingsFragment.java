@@ -38,6 +38,8 @@ public class SettingsFragment extends Fragment {
     private CheckBox tvMoviesTabCheckbox;
     private boolean tabSettingsChanged = false;
     private Button signInButtonSettings;
+    private RadioGroup themeRadioGroup;
+    private static final String PREF_THEME = "app_theme";
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -55,6 +57,7 @@ public class SettingsFragment extends Fragment {
         tvMoviesTabCheckbox = view.findViewById(R.id.tvMoviesTabCheckbox);
         adultContentSwitch = view.findViewById(R.id.adultContentSwitch);
         signInButtonSettings = view.findViewById(R.id.btn_sign_in_settings);
+        themeRadioGroup = view.findViewById(R.id.themeRadioGroup);
 
         /*
         Button testButton = view.findViewById(R.id.test_notification_button);
@@ -78,6 +81,7 @@ public class SettingsFragment extends Fragment {
         // Set up listeners
         setupListeners();
         setupSignInButton();
+        setupThemeListener();
         return view;
     }
 
@@ -349,5 +353,95 @@ public class SettingsFragment extends Fragment {
             boolean isSignedIn = main.userAuthManager != null && main.userAuthManager.isUserSignedIn();
             signInButtonSettings.setText(isSignedIn ? "Sign Out" : "Sign In");
         }
+    }
+
+    private void setupThemeListener() {
+        // Load saved theme
+        String currentTheme = sharedPreferences.getString(PREF_THEME, "default");
+        switch (currentTheme) {
+            case "dark":
+                themeRadioGroup.check(R.id.themeDark);
+                break;
+            case "ocean":
+                themeRadioGroup.check(R.id.themeOcean);
+                break;
+            case "sunset":
+                themeRadioGroup.check(R.id.themeSunset);
+                break;
+            default:
+                themeRadioGroup.check(R.id.themeDefault);
+                break;
+        }
+
+        // Set up theme change listener
+        themeRadioGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            String theme = "default";
+            if (checkedId == R.id.themeDark) {
+                theme = "dark";
+            } else if (checkedId == R.id.themeOcean) {
+                theme = "ocean";
+            } else if (checkedId == R.id.themeSunset) {
+                theme = "sunset";
+            }
+
+            // Save the theme preference
+            sharedPreferences.edit().putString(PREF_THEME, theme).apply();
+
+            // Apply the theme
+            applyTheme(theme);
+        });
+    }
+
+    private void applyTheme(String theme) {
+        int themeRes;
+        switch (theme) {
+            case "dark":
+                themeRes = R.style.Theme_Seen_Dark;
+                break;
+            case "ocean":
+                themeRes = R.style.Theme_Seen_Ocean;
+                break;
+            case "sunset":
+                themeRes = R.style.Theme_Seen_Sunset;
+                break;
+            default:
+                themeRes = R.style.Theme_Seen;
+                break;
+        }
+
+        // Show a dialog to confirm theme change and restart
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Change Theme")
+                .setMessage("The app needs to restart to apply the new theme. Continue?")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    // Apply the theme and restart the activity
+                    if (getActivity() instanceof MainActivity) {
+                        MainActivity activity = (MainActivity) getActivity();
+                        activity.setTheme(themeRes);
+                        Intent intent = new Intent(activity, MainActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        activity.finish();
+                    }
+                })
+                .setNegativeButton("No", (dialog, which) -> {
+                    // Revert the radio button selection
+                    String currentTheme = sharedPreferences.getString(PREF_THEME, "default");
+                    switch (currentTheme) {
+                        case "dark":
+                            themeRadioGroup.check(R.id.themeDark);
+                            break;
+                        case "ocean":
+                            themeRadioGroup.check(R.id.themeOcean);
+                            break;
+                        case "sunset":
+                            themeRadioGroup.check(R.id.themeSunset);
+                            break;
+                        default:
+                            themeRadioGroup.check(R.id.themeDefault);
+                            break;
+                    }
+                })
+                .show();
     }
 }

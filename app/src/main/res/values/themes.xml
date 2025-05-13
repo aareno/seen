@@ -2,16 +2,60 @@
     <!-- Base application theme. -->
     <style name="Theme.Seen" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/white</item>
-        <item name="colorPrimaryVariant">@color/white</item>
-        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorPrimary">@color/default_primary</item>
+        <item name="colorPrimaryVariant">@color/default_primary_dark</item>
+        <item name="colorOnPrimary">@color/default_text</item>
         <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/white</item>
-        <item name="colorSecondaryVariant">@color/white</item>
-        <item name="colorOnSecondary">@color/black</item>
-
+        <item name="colorSecondary">@color/default_accent</item>
+        <item name="colorSecondaryVariant">@color/default_accent</item>
+        <item name="colorOnSecondary">@color/default_text</item>
+        <!-- Background colors -->
+        <item name="android:colorBackground">@color/default_background</item>
+        <item name="colorSurface">@color/default_surface</item>
+        <item name="colorOnSurface">@color/default_text</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
+    </style>
+
+    <!-- Dark theme -->
+    <style name="Theme.Seen.Dark" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/dark_primary</item>
+        <item name="colorPrimaryVariant">@color/dark_primary_dark</item>
+        <item name="colorOnPrimary">@color/dark_text</item>
+        <item name="colorSecondary">@color/dark_accent</item>
+        <item name="colorSecondaryVariant">@color/dark_accent</item>
+        <item name="colorOnSecondary">@color/dark_text</item>
+        <item name="android:colorBackground">@color/dark_background</item>
+        <item name="colorSurface">@color/dark_surface</item>
+        <item name="colorOnSurface">@color/dark_text</item>
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+    </style>
+
+    <!-- Ocean theme -->
+    <style name="Theme.Seen.Ocean" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/ocean_primary</item>
+        <item name="colorPrimaryVariant">@color/ocean_primary_dark</item>
+        <item name="colorOnPrimary">@color/ocean_text</item>
+        <item name="colorSecondary">@color/ocean_accent</item>
+        <item name="colorSecondaryVariant">@color/ocean_accent</item>
+        <item name="colorOnSecondary">@color/ocean_text</item>
+        <item name="android:colorBackground">@color/ocean_background</item>
+        <item name="colorSurface">@color/ocean_surface</item>
+        <item name="colorOnSurface">@color/ocean_text</item>
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+    </style>
+
+    <!-- Sunset theme -->
+    <style name="Theme.Seen.Sunset" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/sunset_primary</item>
+        <item name="colorPrimaryVariant">@color/sunset_primary_dark</item>
+        <item name="colorOnPrimary">@color/sunset_text</item>
+        <item name="colorSecondary">@color/sunset_accent</item>
+        <item name="colorSecondaryVariant">@color/sunset_accent</item>
+        <item name="colorOnSecondary">@color/sunset_text</item>
+        <item name="android:colorBackground">@color/sunset_background</item>
+        <item name="colorSurface">@color/sunset_surface</item>
+        <item name="colorOnSurface">@color/sunset_text</item>
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
     </style>
 </resources>

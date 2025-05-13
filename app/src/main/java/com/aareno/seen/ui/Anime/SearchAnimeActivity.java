@@ -323,102 +323,154 @@ public class SearchAnimeActivity extends AppCompatActivity {
     private void handleAnimeResponse(Response response, List<Anime> animeList,
                                      AnimeSearchAdapter adapter) throws IOException {
         try {
+            if (response == null || response.body() == null) {
+                throw new IOException("Null response or response body");
+            }
+
             String responseBody = response.body().string();
             JSONObject jsonObject = new JSONObject(responseBody);
-            JSONArray mediaList = jsonObject
-                    .getJSONObject("data")
-                    .getJSONObject("Page")
-                    .getJSONArray("media");
+            
+            // Add null checks for each level
+            JSONObject data = jsonObject.optJSONObject("data");
+            if (data == null) {
+                Log.e(TAG, "No data object in response: " + responseBody);
+                throw new JSONException("No data object in response");
+            }
+
+            JSONObject page = data.optJSONObject("Page");
+            if (page == null) {
+                Log.e(TAG, "No Page object in data: " + responseBody);
+                throw new JSONException("No Page object in data");
+            }
+
+            JSONArray mediaList = page.optJSONArray("media");
+            if (mediaList == null) {
+                Log.e(TAG, "No media array in Page: " + responseBody);
+                throw new JSONException("No media array in Page");
+            }
 
             List<Anime> results = new ArrayList<>();
             for (int i = 0; i < mediaList.length(); i++) {
-                JSONObject media = mediaList.getJSONObject(i);
-                Anime anime = parseAnimeFromJson(media);
-                results.add(anime);
+                try {
+                    JSONObject media = mediaList.getJSONObject(i);
+                    Anime anime = parseAnimeFromJson(media);
+                    results.add(anime);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error parsing anime at index " + i, e);
+                    // Continue with next item instead of failing completely
+                    continue;
+                }
             }
 
             runOnUiThread(() -> {
                 animeList.clear();
                 animeList.addAll(results);
                 adapter.notifyDataSetChanged();
+
+                // Show message if no results
+                if (results.isEmpty()) {
+                    Toast.makeText(SearchAnimeActivity.this,
+                            "No results found",
+                            Toast.LENGTH_SHORT).show();
+                }
             });
 
         } catch (JSONException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error parsing JSON response", e);
             runOnUiThread(() -> Toast.makeText(SearchAnimeActivity.this,
-                    "Error parsing results",
+                    "Error parsing results: " + e.getMessage(),
+                    Toast.LENGTH_SHORT).show());
+        } catch (Exception e) {
+            Log.e(TAG, "Unexpected error", e);
+            runOnUiThread(() -> Toast.makeText(SearchAnimeActivity.this,
+                    "Unexpected error: " + e.getMessage(),
                     Toast.LENGTH_SHORT).show());
         }
     }
 
     private Anime parseAnimeFromJson(JSONObject media) throws JSONException {
-        JSONObject title = media.getJSONObject("title");
-        JSONObject coverImage = media.getJSONObject("coverImage");
-        int episodes = media.isNull("episodes") ? 12 : media.getInt("episodes");
+        if (media == null) {
+            throw new JSONException("Media object is null");
+        }
 
-        // Get isAdult value if present
+        // Get required fields with null checks
+        int id = media.getInt("id");
+        
+        JSONObject title = media.optJSONObject("title");
+        if (title == null) {
+            throw new JSONException("Title object is null");
+        }
+
+        String titleRomaji = title.optString("romaji", "Unknown Title");
+        String titleEnglish = title.optString("english", titleRomaji); // Fallback to romaji if English is null
+
+        // Get optional fields
+        String imageUrl = null;
+        JSONObject coverImage = media.optJSONObject("coverImage");
+        if (coverImage != null) {
+            imageUrl = coverImage.optString("large");
+        }
+
+        int episodes = media.optInt("episodes", 12); // Default to 12 if null
         boolean isAdult = media.optBoolean("isAdult", false);
 
-        // Parse dates
-        JSONObject startDateObj = media.getJSONObject("startDate");
-        JSONObject endDateObj = media.getJSONObject("endDate");
-
-        // Create Calendar instances for dates
+        // Parse dates with null checks
         Calendar startCal = Calendar.getInstance();
-        Log.d("SearchAnimeActivity", "Anime: " + title);
-        Log.d("SearchAnimeActivity", "StartDate : " + startDateObj.optInt("year", 0) + " " + startDateObj.optInt("month", 0));
-        if (!startDateObj.isNull("year") && !startDateObj.isNull("month")) {
+        JSONObject startDateObj = media.optJSONObject("startDate");
+        if (startDateObj != null && !startDateObj.isNull("year") && !startDateObj.isNull("month")) {
             startCal.set(
-                    startDateObj.getInt("year"),
-                    startDateObj.getInt("month") - 1,
+                    startDateObj.optInt("year"),
+                    startDateObj.optInt("month") - 1,
                     startDateObj.optInt("day", 1)
             );
         }
 
         Calendar endCal = Calendar.getInstance();
-        if (!endDateObj.isNull("year") && !endDateObj.isNull("month")) {
+        JSONObject endDateObj = media.optJSONObject("endDate");
+        if (endDateObj != null && !endDateObj.isNull("year") && !endDateObj.isNull("month")) {
             endCal.set(
-                    endDateObj.getInt("year"),
-                    endDateObj.getInt("month") - 1,
+                    endDateObj.optInt("year"),
+                    endDateObj.optInt("month") - 1,
                     endDateObj.optInt("day", 1)
             );
         } else {
             endCal.setTime(startCal.getTime()); // Copy startCal date
-            endCal.add(Calendar.WEEK_OF_YEAR, 12); // Add 12 weeks
+            endCal.add(Calendar.WEEK_OF_YEAR, 12); // Add 12 weeks as default duration
         }
 
-        Log.d(TAG, "End date: " + endCal.getTime());
-
-        // Parse airing schedule
+        // Parse airing schedule with null checks
         List<Integer> airingDays = new ArrayList<>();
-        if (!media.isNull("airingSchedule") && !media.getJSONObject("airingSchedule").isNull("nodes")) {
-            JSONArray nodes = media.getJSONObject("airingSchedule")
-                    .getJSONArray("nodes");
+        JSONObject airingSchedule = media.optJSONObject("airingSchedule");
+        if (airingSchedule != null) {
+            JSONArray nodes = airingSchedule.optJSONArray("nodes");
+            if (nodes != null) {
+                for (int i = 0; i < nodes.length(); i++) {
+                    try {
+                        JSONObject node = nodes.getJSONObject(i);
+                        long airingAt = node.optLong("airingAt") * 1000; // Convert to milliseconds
+                        Calendar airDate = Calendar.getInstance();
+                        airDate.setTimeInMillis(airingAt);
 
-            for (int i = 0; i < nodes.length(); i++) {
-                JSONObject node = nodes.getJSONObject(i);
-                long airingAt = node.getLong("airingAt") * 1000; // Convert to milliseconds
-                Calendar airDate = Calendar.getInstance();
-                airDate.setTimeInMillis(airingAt);
+                        // Convert day of week to your format (1 = Monday, 7 = Sunday)
+                        int dayOfWeek = airDate.get(Calendar.DAY_OF_WEEK);
+                        dayOfWeek = dayOfWeek == 1 ? 7 : dayOfWeek - 1;
 
-                // Convert day of week to your format (1 = Monday, 7 = Sunday)
-                int dayOfWeek = airDate.get(Calendar.DAY_OF_WEEK);
-                dayOfWeek = dayOfWeek == 1 ? 7 : dayOfWeek - 1;
-
-                if (!airingDays.contains(dayOfWeek)) {
-                    airingDays.add(dayOfWeek);
+                        if (!airingDays.contains(dayOfWeek)) {
+                            airingDays.add(dayOfWeek);
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing airing schedule node at index " + i, e);
+                    }
                 }
             }
         }
 
-        Log.d(TAG, "Airing days: " + airingDays);
-
         // Create and return the Anime object
         Anime anime = new Anime(
-                media.getInt("id"),
-                title.getString("romaji"),
-                title.optString("english", title.getString("romaji")), // Use romaji if English title is missing
-                coverImage.getString("large"),
+                id,
+                titleRomaji,
+                titleEnglish,
+                imageUrl,
                 episodes,
                 airingDays,
                 startCal.getTime(),
@@ -427,11 +479,6 @@ public class SearchAnimeActivity extends AppCompatActivity {
 
         // Set the mature flag
         anime.setMature(isAdult);
-
-        // If the anime is mature, log it (for debugging)
-        if (isAdult) {
-            Log.d(TAG, "Found adult anime: " + anime.getTitleRomaji());
-        }
 
         // Update the airing status
         anime.updateAiringStatus();

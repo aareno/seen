@@ -15,6 +15,63 @@
         android:textColor="?android:attr/textColorPrimary"
         android:layout_marginBottom="16dp"/>
 
+    <!-- Theme Selection -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Theme"
+        android:textSize="18sp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:layout_marginTop="16dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Choose your preferred color theme"
+        android:textSize="12sp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:layout_marginBottom="8dp"/>
+
+    <RadioGroup
+        android:id="@+id/themeRadioGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="16dp">
+
+        <RadioButton
+            android:id="@+id/themeDefault"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Default"
+            android:textColor="?android:attr/textColorPrimary"
+            android:buttonTint="@color/default_primary"/>
+
+        <RadioButton
+            android:id="@+id/themeDark"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Dark"
+            android:textColor="?android:attr/textColorPrimary"
+            android:buttonTint="@color/dark_primary"/>
+
+        <RadioButton
+            android:id="@+id/themeOcean"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ocean"
+            android:textColor="?android:attr/textColorPrimary"
+            android:buttonTint="@color/ocean_primary"/>
+
+        <RadioButton
+            android:id="@+id/themeSunset"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sunset"
+            android:textColor="?android:attr/textColorPrimary"
+            android:buttonTint="@color/sunset_primary"/>
+    </RadioGroup>
+
     <!-- Tab Selection -->
     <TextView
         android:layout_width="wrap_content"

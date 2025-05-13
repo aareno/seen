@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -66,13 +67,15 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply saved theme before super.onCreate()
+        applyTheme();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        
+
         // Add this at the very beginning of onCreate
         checkGooglePlayServices();
-        printKeyHash(); // Print SHA-1 hash for verification
-        
+        printKeyHash();
+
         try {
             // Initialize authentication and sync managers
             userAuthManager = UserAuthManager.getInstance(this);
@@ -129,8 +132,62 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         TvMoviesFragment = new TvMoviesFragment();
         settingsFragment = new SettingsFragment();
 
+        // Initialize bottom navigation
+        bottomNavigation = findViewById(R.id.bottom_navigation);
+        if (bottomNavigation != null) {
+            // Create ColorStateLists for each tab
+            ColorStateList animeColors = createColorStateList(R.color.wood);
+            ColorStateList kdramaColors = createColorStateList(R.color.red);
+            ColorStateList tvMoviesColors = createColorStateList(R.color.black);
+
+            // Set the custom colors for the icons
+            bottomNavigation.setItemIconTintList(null); // Remove default tint
+            bottomNavigation.setItemTextColor(createColorStateList(R.color.gray));
+
+            bottomNavigation.setOnItemSelectedListener(item -> {
+                Fragment selectedFragment = null;
+                int itemId = item.getItemId();
+
+                if (isInSettings) {
+                    // Reset settings state when navigating away using bottom navigation
+                    getSupportFragmentManager().popBackStack();
+                    resetToMainView();
+                }
+
+                if (itemId == R.id.nav_anime) {
+                    selectedFragment = animeFragment;
+                    bottomNavigation.setItemIconTintList(animeColors);
+                } else if (itemId == R.id.nav_kdrama) {
+                    selectedFragment = kdramaFragment;
+                    bottomNavigation.setItemIconTintList(kdramaColors);
+                } else if (itemId == R.id.nav_tv_movies) {
+                    selectedFragment = TvMoviesFragment;
+                    bottomNavigation.setItemIconTintList(tvMoviesColors);
+                }
+
+                if (selectedFragment != null) {
+                    getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, selectedFragment)
+                            .commit();
+
+                    if (undoButton != null) {
+                        undoButton.setVisibility(View.VISIBLE);
+                        undoButton.setEnabled(true);
+                    }
+
+                    return true;
+                }
+
+                return false;
+            });
+        }
+
         // Initialize buttons
         initializeButtons();
+
+        // Apply settings and load initial fragment
+        applyTabVisibilitySettings();
+        applyUserSettings();
 
         // Check if user is already signed in
         if (userAuthManager.isUserSignedIn()) {
@@ -139,68 +196,13 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
             syncData();
         }
 
-        // Bottom Navigation Setup
-        bottomNavigation = findViewById(R.id.bottom_navigation);
-
-        // Create ColorStateLists for each tab
-        ColorStateList animeColors = createColorStateList(R.color.wood);
-        ColorStateList kdramaColors = createColorStateList(R.color.red);
-        ColorStateList tvMoviesColors = createColorStateList(R.color.black);
-
-        applyTabVisibilitySettings();
-
-
-        // Set the custom colors for the icons
-        bottomNavigation.setItemIconTintList(null); // Remove default tint
-        bottomNavigation.setItemTextColor(createColorStateList(R.color.gray));
-
-        bottomNavigation.setOnItemSelectedListener(item -> {
-            Fragment selectedFragment = null;
-            int itemId = item.getItemId();
-
-            if (isInSettings) {
-                // Reset settings state when navigating away using bottom navigation
-                getSupportFragmentManager().popBackStack();
-                resetToMainView();
-            }
-
-            if (itemId == R.id.nav_anime) {
-                selectedFragment = animeFragment;
-                bottomNavigation.setItemIconTintList(animeColors);
-            } else if (itemId == R.id.nav_kdrama) {
-                selectedFragment = kdramaFragment;
-                bottomNavigation.setItemIconTintList(kdramaColors);
-            } else if (itemId == R.id.nav_tv_movies) {
-                selectedFragment = TvMoviesFragment;
-                bottomNavigation.setItemIconTintList(tvMoviesColors);
-            }
-
-            if (selectedFragment != null) {
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, selectedFragment)
-                        .commit();
-
-                if (undoButton != null) {
-                    undoButton.setVisibility(View.VISIBLE);
-                    undoButton.setEnabled(true);
-                }
-
-                return true;
-            }
-
-            return false;
-        });
-
-        applyUserSettings();
-
-        btnAdd = findViewById(R.id.btn_add); // assign to field
+        btnAdd = findViewById(R.id.btn_add);
         if (btnAdd != null) {
             btnAdd.setOnClickListener(v -> {
                 Fragment currentFragment = getSupportFragmentManager()
                         .findFragmentById(R.id.fragment_container);
 
                 boolean showAdultContent = shouldShowAdultContent();
-
 
                 if (currentFragment instanceof AnimeFragment) {
                     Intent intent = new Intent(MainActivity.this, SearchAnimeActivity.class);
@@ -216,7 +218,7 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
                     startActivityForResult(intent, SEARCH_TVMOVIES_REQUEST_CODE);
                 }
             });
-            btnAdd.setVisibility(View.VISIBLE); // ensure visible on startup
+            btnAdd.setVisibility(View.VISIBLE);
         }
 
         if (savedInstanceState == null) {
@@ -505,6 +507,11 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
     }
 
     private void applyTabVisibilitySettings() {
+        if (bottomNavigation == null) {
+            Log.e("MainActivity", "BottomNavigationView is null, cannot apply tab visibility settings");
+            return;
+        }
+
         SharedPreferences prefs = getSharedPreferences("AppSettings", MODE_PRIVATE);
         boolean animeEnabled = prefs.getBoolean("anime_tab_enabled", true);
         boolean kdramaEnabled = prefs.getBoolean("kdrama_tab_enabled", true);
@@ -512,9 +519,17 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
 
         // Update the menu visibility
         Menu menu = bottomNavigation.getMenu();
-        menu.findItem(NAV_ANIME).setVisible(animeEnabled);
-        menu.findItem(NAV_KDRAMA).setVisible(kdramaEnabled);
-        menu.findItem(NAV_TVMOVIES).setVisible(tvMoviesEnabled);
+        if (menu != null) {
+            MenuItem animeItem = menu.findItem(NAV_ANIME);
+            MenuItem kdramaItem = menu.findItem(NAV_KDRAMA);
+            MenuItem tvMoviesItem = menu.findItem(NAV_TVMOVIES);
+
+            if (animeItem != null) animeItem.setVisible(animeEnabled);
+            if (kdramaItem != null) kdramaItem.setVisible(kdramaEnabled);
+            if (tvMoviesItem != null) tvMoviesItem.setVisible(tvMoviesEnabled);
+        } else {
+            Log.e("MainActivity", "Menu is null in BottomNavigationView");
+        }
     }
 
     private void loadInitialFragment() {
@@ -946,5 +961,25 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
             hexChars[j * 2 + 1] = hexArray[v & 0x0F];
         }
         return new String(hexChars);
+    }
+
+    private void applyTheme() {
+        SharedPreferences sharedPreferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
+        String theme = sharedPreferences.getString("app_theme", "default");
+        
+        switch (theme) {
+            case "dark":
+                setTheme(R.style.Theme_Seen_Dark);
+                break;
+            case "ocean":
+                setTheme(R.style.Theme_Seen_Ocean);
+                break;
+            case "sunset":
+                setTheme(R.style.Theme_Seen_Sunset);
+                break;
+            default:
+                setTheme(R.style.Theme_Seen);
+                break;
+        }
     }
 }
