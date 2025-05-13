@@ -1,182 +1,188 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:background="?android:attr/windowBackground">
+    android:fillViewport="true">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Settings"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="?android:attr/textColorPrimary"
-        android:layout_marginBottom="16dp"/>
-
-    <!-- Theme Selection -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Theme"
-        android:textSize="18sp"
-        android:textColor="?android:attr/textColorPrimary"
-        android:layout_marginTop="16dp"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Choose your preferred color theme"
-        android:textSize="12sp"
-        android:textColor="?android:attr/textColorSecondary"
-        android:layout_marginBottom="8dp"/>
-
-    <RadioGroup
-        android:id="@+id/themeRadioGroup"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginBottom="16dp">
+        android:padding="16dp"
+        android:background="?android:attr/windowBackground">
 
-        <RadioButton
-            android:id="@+id/themeDefault"
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Settings"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Theme Selection -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Theme"
+            android:textSize="18sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginTop="16dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Choose your preferred color theme"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="8dp"/>
+
+        <RadioGroup
+            android:id="@+id/themeRadioGroup"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Default"
-            android:textColor="?android:attr/textColorPrimary"
-            android:buttonTint="@color/default_primary"/>
+            android:orientation="vertical"
+            android:layout_marginBottom="16dp">
 
-        <RadioButton
-            android:id="@+id/themeDark"
+            <RadioButton
+                android:id="@+id/themeDefault"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Default"
+                android:textColor="?android:attr/textColorPrimary"
+                android:buttonTint="@color/default_primary"/>
+
+            <RadioButton
+                android:id="@+id/themeDark"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Dark"
+                android:textColor="?android:attr/textColorPrimary"
+                android:buttonTint="@color/dark_primary"/>
+
+            <RadioButton
+                android:id="@+id/themeOcean"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ocean"
+                android:textColor="?android:attr/textColorPrimary"
+                android:buttonTint="@color/ocean_primary"/>
+
+            <RadioButton
+                android:id="@+id/themeSunset"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sunset"
+                android:textColor="?android:attr/textColorPrimary"
+                android:buttonTint="@color/sunset_primary"/>
+        </RadioGroup>
+
+        <!-- Tab Selection -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Visible Tabs"
+            android:textSize="18sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginTop="16dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select at least one tab"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="8dp"/>
+
+        <CheckBox
+            android:id="@+id/animeTabCheckbox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Dark"
-            android:textColor="?android:attr/textColorPrimary"
-            android:buttonTint="@color/dark_primary"/>
+            android:text="Anime"
+            android:checked="true"
+            android:buttonTint="@color/blue"
+            android:textColor="?android:attr/textColorPrimary"/>
 
-        <RadioButton
-            android:id="@+id/themeOcean"
+        <CheckBox
+            android:id="@+id/kdramaTabCheckbox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Ocean"
-            android:textColor="?android:attr/textColorPrimary"
-            android:buttonTint="@color/ocean_primary"/>
+            android:text="K-Drama"
+            android:checked="true"
+            android:buttonTint="@color/blue"
+            android:textColor="?android:attr/textColorPrimary"/>
 
-        <RadioButton
-            android:id="@+id/themeSunset"
+        <CheckBox
+            android:id="@+id/tvMoviesTabCheckbox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Sunset"
+            android:text="TV/Movies"
+            android:checked="true"
+            android:buttonTint="@color/blue"
+            android:textColor="?android:attr/textColorPrimary"/>
+
+        <!-- Adult Content Filter -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Content Filter"
+            android:textSize="18sp"
             android:textColor="?android:attr/textColorPrimary"
-            android:buttonTint="@color/sunset_primary"/>
-    </RadioGroup>
+            android:layout_marginTop="24dp"/>
 
-    <!-- Tab Selection -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Visible Tabs"
-        android:textSize="18sp"
-        android:textColor="?android:attr/textColorPrimary"
-        android:layout_marginTop="16dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Control visibility of mature content (18+)"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="8dp"/>
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Select at least one tab"
-        android:textSize="12sp"
-        android:textColor="?android:attr/textColorSecondary"
-        android:layout_marginBottom="8dp"/>
+        <Switch
+            android:id="@+id/adultContentSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Show Adult Content (18+)"
+            android:textColor="?android:attr/textColorPrimary"
+            android:thumbTint="@color/blue"
+            android:trackTint="@color/gray"
+            android:layout_marginTop="8dp"/>
 
-    <CheckBox
-        android:id="@+id/animeTabCheckbox"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Anime"
-        android:checked="true"
-        android:buttonTint="@color/blue"
-        android:textColor="?android:attr/textColorPrimary"/>
+        <!-- Notification Settings -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Notifications"
+            android:textSize="18sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginTop="24dp"/>
 
-    <CheckBox
-        android:id="@+id/kdramaTabCheckbox"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="K-Drama"
-        android:checked="true"
-        android:buttonTint="@color/blue"
-        android:textColor="?android:attr/textColorPrimary"/>
+        <Switch
+            android:id="@+id/notificationsSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enable Notifications"
+            android:textColor="?android:attr/textColorPrimary"
+            android:thumbTint="@color/blue"
+            android:trackTint="@color/gray"
+            android:layout_marginTop="8dp"/>
 
-    <CheckBox
-        android:id="@+id/tvMoviesTabCheckbox"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="TV/Movies"
-        android:checked="true"
-        android:buttonTint="@color/blue"
-        android:textColor="?android:attr/textColorPrimary"/>
+        <!-- Version Info -->
+        <TextView
+            android:id="@+id/versionInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:text="Version 1.0"/>
 
-    <!-- Adult Content Filter -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Content Filter"
-        android:textSize="18sp"
-        android:textColor="?android:attr/textColorPrimary"
-        android:layout_marginTop="24dp"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Control visibility of mature content (18+)"
-        android:textSize="12sp"
-        android:textColor="?android:attr/textColorSecondary"
-        android:layout_marginBottom="8dp"/>
-
-    <Switch
-        android:id="@+id/adultContentSwitch"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Show Adult Content (18+)"
-        android:textColor="?android:attr/textColorPrimary"
-        android:thumbTint="@color/blue"
-        android:trackTint="@color/gray"
-        android:layout_marginTop="8dp"/>
-
-    <!-- Notification Settings -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Notifications"
-        android:textSize="18sp"
-        android:textColor="?android:attr/textColorPrimary"
-        android:layout_marginTop="24dp"/>
-
-    <Switch
-        android:id="@+id/notificationsSwitch"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Enable Notifications"
-        android:textColor="?android:attr/textColorPrimary"
-        android:thumbTint="@color/blue"
-        android:trackTint="@color/gray"
-        android:layout_marginTop="8dp"/>
-
-    <!-- Version Info -->
-    <TextView
-        android:id="@+id/versionInfo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:textColor="?android:attr/textColorSecondary"
-        android:text="Version 1.0"/>
-
-    <!-- Sign In / Sign Out Button -->
-    <Button
-        android:id="@+id/btn_sign_in_settings"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Sign In With Google"
-        android:layout_marginTop="32dp"
-        android:textSize="16sp"/>
-</LinearLayout>
+        <!-- Sign In / Sign Out Button -->
+        <Button
+            android:id="@+id/btn_sign_in_settings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sign In With Google"
+            android:layout_marginTop="32dp"
+            android:textSize="16sp"/>
+    </LinearLayout>
+</ScrollView>
