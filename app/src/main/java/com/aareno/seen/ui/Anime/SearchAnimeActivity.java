@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -14,6 +16,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -22,6 +25,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aareno.seen.R;
+import com.bumptech.glide.Glide;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -40,8 +44,15 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+import androidx.core.content.ContextCompat;
+import android.graphics.PorterDuff;
+import android.content.res.Configuration;
+
 public class SearchAnimeActivity extends AppCompatActivity {
     private static final String TAG = "SearchAnimeActivity";
+    private static final long SEARCH_DEBOUNCE_DELAY = 500; // 500ms delay
+    private Handler searchHandler;
+    private Runnable searchRunnable;
 
     // Searching
     private EditText searchEditText;
@@ -60,6 +71,9 @@ public class SearchAnimeActivity extends AppCompatActivity {
 
     // Adult content filter setting
     private boolean showAdultContent = false;
+
+    private View loadingContainer;
+    private ImageView loadingIndicator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,6 +98,19 @@ public class SearchAnimeActivity extends AppCompatActivity {
         popularRecyclerView = findViewById(R.id.popular_recycler_view);
         searchResultsTitle = findViewById(R.id.search_results_title);
         popularTitle = findViewById(R.id.popular_title);
+        loadingContainer = findViewById(R.id.loading_container);
+        loadingIndicator = findViewById(R.id.loading_indicator);
+
+        // Set up loading indicator color based on theme
+        int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) {
+            // Dark theme - set white color
+            loadingIndicator.setColorFilter(ContextCompat.getColor(this, R.color.white), PorterDuff.Mode.SRC_IN);
+        } else {
+            // Light theme - set black color
+            loadingIndicator.setColorFilter(ContextCompat.getColor(this, R.color.black), PorterDuff.Mode.SRC_IN);
+        }
+
         animeList = new ArrayList<>();
         popularAnimeList = new ArrayList<>();
 
@@ -127,6 +154,8 @@ public class SearchAnimeActivity extends AppCompatActivity {
     }
 
     private void setupSearchListeners() {
+        searchHandler = new Handler(Looper.getMainLooper());
+        
         searchEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -134,6 +163,23 @@ public class SearchAnimeActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 updateVisibility(!s.toString().isEmpty());
+                
+                // Cancel any pending searches
+                if (searchRunnable != null) {
+                    searchHandler.removeCallbacks(searchRunnable);
+                }
+
+                final String query = s.toString().trim();
+                if (!query.isEmpty()) {
+                    // Create new search runnable
+                    searchRunnable = () -> searchAnime(query);
+                    // Post delayed to debounce
+                    searchHandler.postDelayed(searchRunnable, SEARCH_DEBOUNCE_DELAY);
+                } else {
+                    // Clear results if search is empty
+                    animeList.clear();
+                    animeAdapter.notifyDataSetChanged();
+                }
             }
 
             @Override
@@ -151,14 +197,45 @@ public class SearchAnimeActivity extends AppCompatActivity {
                     (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                 InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(searchEditText.getWindowToken(), 0);
-                searchAnime(searchEditText.getText().toString());
+                searchAnime(searchEditText.getText().toString().trim());
                 return true;
             }
             return false;
         });
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Remove any pending callbacks to prevent memory leaks
+        if (searchHandler != null && searchRunnable != null) {
+            searchHandler.removeCallbacks(searchRunnable);
+        }
+    }
+
+    private void showLoading() {
+        runOnUiThread(() -> {
+            Glide.with(this)
+                .asGif()
+                .load(R.drawable.loading)
+                .into(loadingIndicator);
+
+            loadingContainer.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
+            popularRecyclerView.setVisibility(View.GONE);
+        });
+    }
+
+    private void hideLoading() {
+        runOnUiThread(() -> {
+            Glide.with(this).clear(loadingIndicator); // Stop GIF
+            loadingContainer.setVisibility(View.GONE);
+            updateVisibility(!searchEditText.getText().toString().trim().isEmpty());
+        });
+    }
+
     private void searchAnime(String query) {
+        showLoading();
         OkHttpClient client = new OkHttpClient();
 
         // Modified GraphQL query to include isAdult filter
@@ -228,6 +305,7 @@ public class SearchAnimeActivity extends AppCompatActivity {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
+                hideLoading();
                 runOnUiThread(() -> Toast.makeText(SearchAnimeActivity.this,
                         "Search failed: " + e.getMessage(),
                         Toast.LENGTH_SHORT).show());
@@ -235,12 +313,17 @@ public class SearchAnimeActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                handleAnimeResponse(response, animeList, animeAdapter);
+                try {
+                    handleAnimeResponse(response, animeList, animeAdapter);
+                } finally {
+                    hideLoading();
+                }
             }
         });
     }
 
     private void loadPopularAnime() {
+        showLoading();
         OkHttpClient client = new OkHttpClient();
 
         // Modified GraphQL query to include isAdult filter
@@ -308,6 +391,7 @@ public class SearchAnimeActivity extends AppCompatActivity {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
+                hideLoading();
                 runOnUiThread(() -> Toast.makeText(SearchAnimeActivity.this,
                         "Failed to load popular anime: " + e.getMessage(),
                         Toast.LENGTH_SHORT).show());
@@ -315,7 +399,11 @@ public class SearchAnimeActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                handleAnimeResponse(response, popularAnimeList, popularAnimeAdapter);
+                try {
+                    handleAnimeResponse(response, popularAnimeList, popularAnimeAdapter);
+                } finally {
+                    hideLoading();
+                }
             }
         });
     }

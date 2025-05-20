@@ -17,6 +17,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,6 +26,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aareno.seen.R;
+import com.bumptech.glide.Glide;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -47,8 +49,15 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import androidx.core.content.ContextCompat;
+import android.graphics.PorterDuff;
+import android.content.res.Configuration;
+
 public class SearchShowActivity extends AppCompatActivity {
     private static final String TAG = "SearchShowActivity";
+    private static final long SEARCH_DEBOUNCE_DELAY = 500; // 500ms delay
+    private Handler searchHandler;
+    private Runnable searchRunnable;
 
     // Searching
     private EditText searchEditText;
@@ -66,6 +75,9 @@ public class SearchShowActivity extends AppCompatActivity {
     private TextView latestTitle;
 
     private boolean showAdultContent = false;
+
+    private View loadingContainer;
+    private ImageView loadingIndicator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,6 +107,19 @@ public class SearchShowActivity extends AppCompatActivity {
         latestRecyclerView = findViewById(R.id.popular_recycler_view);
         searchResultsTitle = findViewById(R.id.search_results_title);
         latestTitle = findViewById(R.id.popular_title);
+        loadingContainer = findViewById(R.id.loading_container);
+        loadingIndicator = findViewById(R.id.loading_indicator);
+
+        // Set up loading indicator color based on theme
+        int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) {
+            // Dark theme - set white color
+            loadingIndicator.setColorFilter(ContextCompat.getColor(this, R.color.white), PorterDuff.Mode.SRC_IN);
+        } else {
+            // Light theme - set black color
+            loadingIndicator.setColorFilter(ContextCompat.getColor(this, R.color.black), PorterDuff.Mode.SRC_IN);
+        }
+
         showList = new ArrayList<>();
         latestShowList = new ArrayList<>();
 
@@ -143,12 +168,36 @@ public class SearchShowActivity extends AppCompatActivity {
     }
 
     private void setupSearchListeners() {
+        searchHandler = new Handler(Looper.getMainLooper());
+        
         searchEditText.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
                 updateVisibility(!s.toString().isEmpty());
+                
+                // Cancel any pending searches
+                if (searchRunnable != null) {
+                    searchHandler.removeCallbacks(searchRunnable);
+                }
+
+                final String query = s.toString().trim();
+                if (!query.isEmpty()) {
+                    // Create new search runnable
+                    searchRunnable = () -> searchShows(query);
+                    // Post delayed to debounce
+                    searchHandler.postDelayed(searchRunnable, SEARCH_DEBOUNCE_DELAY);
+                } else {
+                    // Clear results if search is empty
+                    showList.clear();
+                    showAdapter.notifyDataSetChanged();
+                }
             }
-            @Override public void afterTextChanged(Editable s) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {}
         });
 
         searchButton.setOnClickListener(v -> {
@@ -162,25 +211,60 @@ public class SearchShowActivity extends AppCompatActivity {
                     (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                 InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(searchEditText.getWindowToken(), 0);
-                searchShows(searchEditText.getText().toString());
+                searchShows(searchEditText.getText().toString().trim());
                 return true;
             }
             return false;
         });
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Remove any pending callbacks to prevent memory leaks
+        if (searchHandler != null && searchRunnable != null) {
+            searchHandler.removeCallbacks(searchRunnable);
+        }
+    }
+
+    private void showLoading() {
+        runOnUiThread(() -> {
+            Glide.with(this)
+                .asGif()
+                .load(R.drawable.loading)
+                .into(loadingIndicator);
+
+            loadingContainer.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
+            latestRecyclerView.setVisibility(View.GONE);
+        });
+    }
+
+    private void hideLoading() {
+        runOnUiThread(() -> {
+            Glide.with(this).clear(loadingIndicator); // Stop GIF
+            loadingContainer.setVisibility(View.GONE);
+            updateVisibility(!searchEditText.getText().toString().trim().isEmpty());
+        });
+    }
+
     private void searchShows(String query) {
+        showLoading();
         OkHttpClient client = new OkHttpClient();
         String url = "https://api.tvmaze.com/search/shows?q=" + Uri.encode(query);
         Request request = new Request.Builder().url(url).get().build();
 
         client.newCall(request).enqueue(new Callback() {
-            @Override public void onFailure(Call call, IOException e) {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                hideLoading();
                 runOnUiThread(() -> Toast.makeText(SearchShowActivity.this,
-                        "Search failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                        "Search failed: " + e.getMessage(),
+                        Toast.LENGTH_SHORT).show());
             }
 
-            @Override public void onResponse(Call call, Response response) throws IOException {
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
                 try {
                     String responseBody = response.body().string();
                     JSONArray searchArray = new JSONArray(responseBody);
@@ -232,28 +316,36 @@ public class SearchShowActivity extends AppCompatActivity {
                 } catch (JSONException e) {
                     e.printStackTrace();
                     runOnUiThread(() -> Toast.makeText(SearchShowActivity.this,
-                            "Error parsing results", Toast.LENGTH_SHORT).show());
+                            "Error parsing results",
+                            Toast.LENGTH_SHORT).show());
+                } finally {
+                    hideLoading();
                 }
             }
         });
     }
 
     private void loadLatestShows() {
+        showLoading();
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .build();
-        String url = "https://api.tvmaze.com/schedule?country=US"; // You can generalize this if needed
+        String url = "https://api.tvmaze.com/schedule?country=US";
 
         Request request = new Request.Builder().url(url).get().build();
         client.newCall(request).enqueue(new Callback() {
-            @Override public void onFailure(Call call, IOException e) {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                hideLoading();
                 runOnUiThread(() -> Toast.makeText(SearchShowActivity.this,
-                        "Failed to load latest shows: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                        "Failed to load latest shows: " + e.getMessage(),
+                        Toast.LENGTH_SHORT).show());
             }
 
-            @Override public void onResponse(Call call, Response response) throws IOException {
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
                 try {
                     String responseBody = response.body().string();
                     JSONArray array = new JSONArray(responseBody);
@@ -304,7 +396,10 @@ public class SearchShowActivity extends AppCompatActivity {
                 } catch (JSONException e) {
                     e.printStackTrace();
                     runOnUiThread(() -> Toast.makeText(SearchShowActivity.this,
-                            "Error parsing results", Toast.LENGTH_SHORT).show());
+                            "Error parsing results",
+                            Toast.LENGTH_SHORT).show());
+                } finally {
+                    hideLoading();
                 }
             }
         });

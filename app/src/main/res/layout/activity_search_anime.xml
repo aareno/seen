@@ -1,92 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:layout_height="match_parent">
 
-    <ImageButton
-        android:id="@+id/back_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@android:drawable/ic_menu_close_clear_cancel"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:padding="10dp"
-        android:contentDescription="Back"/>
-
-
-
+    <!-- Main content -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginTop="16dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
 
-        <ImageView
-            android:id="@+id/search_icon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/search"
-            android:contentDescription="Search Icon"
-            android:layout_marginEnd="8dp" />
-
-        <EditText
-            android:id="@+id/search_edit_text"
-            android:layout_width="0dp"
+        <ImageButton
+            android:id="@+id/back_button"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:imeOptions="actionSearch"
-            android:inputType="text"
-            android:maxLines="1"
-            android:singleLine="true"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:textCursorDrawable="@drawable/cursor_color"
-            android:backgroundTint="?attr/colorOnPrimary"
-            android:textColor="?attr/colorOnPrimary"
-            android:hint="Search" />
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="10dp"
+            android:contentDescription="Back"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="16dp">
+
+            <ImageView
+                android:id="@+id/search_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/search"
+                android:contentDescription="Search Icon"
+                android:layout_marginEnd="8dp" />
+
+            <EditText
+                android:id="@+id/search_edit_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:textCursorDrawable="@drawable/cursor_color"
+                android:backgroundTint="?attr/colorOnPrimary"
+                android:textColor="?attr/colorOnPrimary"
+                android:hint="Search" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/search_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Search"/>
+
+        <!-- Popular Section -->
+        <TextView
+            android:id="@+id/popular_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Popular Titles"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/popular_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Search Results Section -->
+        <TextView
+            android:id="@+id/search_results_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Search Results"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:visibility="gone"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/search_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
+
     </LinearLayout>
 
-
-    <Button
-        android:id="@+id/search_button"
+    <!-- Loading indicator overlay -->
+    <RelativeLayout
+        android:id="@+id/loading_container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Search"/>
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:background="#80000000">
 
-    <!-- Popular Section -->
-    <TextView
-        android:id="@+id/popular_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Popular Titles"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="8dp"/>
+        <ImageView
+            android:id="@+id/loading_indicator"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_centerInParent="true"/>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/popular_recycler_view"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"/>
+    </RelativeLayout>
 
-    <!-- Search Results Section -->
-    <TextView
-        android:id="@+id/search_results_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Search Results"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:visibility="gone"/>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/search_recycler_view"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"/>
-
-</LinearLayout>
+</RelativeLayout>
