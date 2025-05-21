@@ -1,25 +1,34 @@
 package com.aareno.seen.ui.Anime;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aareno.seen.R;
+import com.aareno.seen.services.SpotifyService;
 import com.aareno.seen.ui.KDrama.KDrama;
 import com.aareno.seen.ui.KDrama.WatchingKDramaAdapter;
 import com.bumptech.glide.Glide;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -77,6 +86,7 @@ public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdap
         ProgressBar progressBar;
         TextView progressText;
         ImageButton deleteButton;
+        ImageButton musicButton;
         TextView[] dayIndicators;
 
         ViewHolder(View itemView) {
@@ -89,6 +99,7 @@ public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdap
             progressBar = itemView.findViewById(R.id.progress_bar);
             progressText = itemView.findViewById(R.id.tv_progress_text);
             deleteButton = itemView.findViewById(R.id.btn_delete);
+            musicButton = itemView.findViewById(R.id.btn_music);
 
             // Initialize day indicators array
             dayIndicators = new TextView[]{
@@ -144,6 +155,51 @@ public class WatchingAnimeAdapter extends RecyclerView.Adapter<WatchingAnimeAdap
                 if (deleteClickListener != null) {
                     deleteClickListener.onDeleteClick(currentAnime);
                 }
+            });
+
+            // Music button click listener
+            musicButton.setOnClickListener(v -> {
+                // Inflate the popup layout
+                View popupView = LayoutInflater.from(context).inflate(R.layout.popup_music_list, null);
+
+                // Create the popup window
+                PopupWindow popupWindow = new PopupWindow(
+                        popupView,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        true
+                );
+
+                // Set up the close button
+                ImageButton closeButton = popupView.findViewById(R.id.btn_close_popup);
+                closeButton.setOnClickListener(view -> popupWindow.dismiss());
+
+                // Initialize ListView and adapter
+                ListView musicListView = popupView.findViewById(R.id.music_list_view);
+                MusicListAdapter adapter = new MusicListAdapter(context, new ArrayList<>());
+                musicListView.setAdapter(adapter);
+
+                // Create SpotifyService instance and search for music
+                SpotifyService spotifyService = new SpotifyService(context);
+                spotifyService.searchAnimeOST(currentAnime.getTitleEnglish(), new SpotifyService.OnMusicLoadedCallback() {
+                    @Override
+                    public void onMusicLoaded(List<SpotifyService.Track> tracks) {
+                        // Update UI on main thread
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            adapter.updateTracks(tracks);
+                        });
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            Toast.makeText(context, "Error loading music: " + error, Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                });
+
+                // Show the popup window
+                popupWindow.showAsDropDown(v, 0, 0, Gravity.END);
             });
 
             progressBar.setMax(currentAnime.getEpisodeCount());

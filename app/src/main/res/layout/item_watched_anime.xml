@@ -23,6 +23,7 @@
             android:padding="12dp"
             android:src="@drawable/trash"
             android:scaleType="centerCrop"
+            android:layout_marginEnd="16dp"
             android:contentDescription="Delete"
             app:tint="@color/red" />
 
@@ -59,7 +60,28 @@
                     android:layout_height="wrap_content"
                     android:textSize="16sp"
                     android:layout_marginTop="10dp" />
+
+                <!-- Music Button aligned to the right below finished_date -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="end"
+                    android:layout_marginTop="8dp">
+
+                    <ImageButton
+                        android:id="@+id/btn_music"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:padding="12dp"
+                        android:src="@drawable/musiclibrary"
+                        android:scaleType="centerCrop"
+                        android:contentDescription="Music"
+                        app:tint="@color/green" />
+                </LinearLayout>
             </LinearLayout>
+
         </LinearLayout>
     </RelativeLayout>
 </androidx.cardview.widget.CardView>
