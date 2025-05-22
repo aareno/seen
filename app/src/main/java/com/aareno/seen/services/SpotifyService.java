@@ -1,47 +1,33 @@
 package com.aareno.seen.services;
 
 import android.content.Context;
-import android.util.Base64;
 import android.util.Log;
+
+import com.aareno.seen.auth.SpotifyAuthManager;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class SpotifyService {
     private static final String TAG = "SpotifyService";
-    private static final String CLIENT_ID = "0a25702927cf443694296cdf4b11ae4d";
-    private static final String CLIENT_SECRET = "dd5d0acbab6347b49375ed6e5bb169ae";
-    private static final String TOKEN_URL = "https://accounts.spotify.com/api/token";
     private static final String SEARCH_URL = "https://api.spotify.com/v1/search";
 
-    private String accessToken;
     private final OkHttpClient client;
     private final Context context;
-    private boolean isGettingToken = false;
-    private List<PendingSearch> pendingSearches = new ArrayList<>();
-
-    private static class PendingSearch {
-        String query;
-        OnMusicLoadedCallback callback;
-
-        PendingSearch(String query, OnMusicLoadedCallback callback) {
-            this.query = query;
-            this.callback = callback;
-        }
-    }
+    private final SpotifyAuthManager authManager;
 
     public interface OnMusicLoadedCallback {
         void onMusicLoaded(List<Track> tracks);
@@ -70,83 +56,28 @@ public class SpotifyService {
     public SpotifyService(Context context) {
         this.context = context;
         this.client = new OkHttpClient();
-        getAccessToken();
-    }
-
-    private void getAccessToken() {
-        if (isGettingToken) {
-            return;
-        }
-
-        isGettingToken = true;
-        String credentials = CLIENT_ID + ":" + CLIENT_SECRET;
-        String base64Credentials = Base64.encodeToString(credentials.getBytes(), Base64.NO_WRAP);
-
-        RequestBody formBody = new FormBody.Builder()
-                .add("grant_type", "client_credentials")
-                .build();
-
-        Request request = new Request.Builder()
-                .url(TOKEN_URL)
-                .post(formBody)
-                .header("Authorization", "Basic " + base64Credentials)
-                .build();
-
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                Log.e(TAG, "Failed to get access token", e);
-                isGettingToken = false;
-                processPendingSearchesWithError("Failed to authenticate with Spotify");
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                try {
-                    String jsonData = response.body().string();
-                    JSONObject json = new JSONObject(jsonData);
-                    accessToken = json.getString("access_token");
-                    isGettingToken = false;
-                    processPendingSearches();
-                } catch (JSONException e) {
-                    Log.e(TAG, "Error parsing token response", e);
-                    isGettingToken = false;
-                    processPendingSearchesWithError("Error authenticating with Spotify");
-                }
-            }
-        });
-    }
-
-    private void processPendingSearches() {
-        for (PendingSearch search : pendingSearches) {
-            performSearch(search.query, search.callback);
-        }
-        pendingSearches.clear();
-    }
-
-    private void processPendingSearchesWithError(String error) {
-        for (PendingSearch search : pendingSearches) {
-            search.callback.onError(error);
-        }
-        pendingSearches.clear();
+        this.authManager = SpotifyAuthManager.getInstance(context);
     }
 
     public void searchAnimeOST(String animeName, OnMusicLoadedCallback callback) {
+        String accessToken = authManager.getAccessToken();
         if (accessToken == null) {
-            if (!isGettingToken) {
-                getAccessToken();
-            }
-            pendingSearches.add(new PendingSearch(animeName, callback));
+            callback.onError("Not authenticated with Spotify. Please sign in first.");
             return;
         }
 
-        performSearch(animeName, callback);
-    }
+        String query = animeName;
+        Log.d(TAG, "query: " + query);
+        String encodedQuery;
+        try {
+            encodedQuery = URLEncoder.encode(query, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            callback.onError("Encoding error: " + e.getMessage());
+            return;
+        }
 
-    private void performSearch(String animeName, OnMusicLoadedCallback callback) {
-        String query = animeName + " OST soundtrack";
-        String encodedQuery = query.replace(" ", "%20");
-        String url = SEARCH_URL + "?q=" + encodedQuery + "&type=track&limit=20";
+        String market = "US"; // Change to your preferred market code
+        String url = SEARCH_URL + "?q=" + encodedQuery + "&type=track&limit=20&market=" + market;
 
         Request request = new Request.Builder()
                 .url(url)
@@ -162,9 +93,8 @@ public class SpotifyService {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 if (response.code() == 401) {
-                    // Token expired or invalid, get a new one and retry
-                    accessToken = null;
-                    searchAnimeOST(animeName, callback);
+                    // Token expired or invalid
+                    callback.onError("Authentication expired. Please sign in again.");
                     return;
                 }
 
@@ -200,4 +130,4 @@ public class SpotifyService {
             }
         });
     }
-} 
+}

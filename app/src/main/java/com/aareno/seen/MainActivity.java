@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -29,6 +30,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import com.aareno.seen.auth.UserAuthManager;
+import com.aareno.seen.auth.SpotifyAuthManager;
 import com.aareno.seen.data.Anime.AnimeRepository;
 import com.aareno.seen.data.KDrama.KDramaRepository;
 import com.aareno.seen.data.TvMovies.ShowRepository;
@@ -70,6 +72,8 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
     public UserAuthManager userAuthManager;
     private DataSyncManager dataSyncManager;
     public ActivityResultLauncher<Intent> signInLauncher;
+    private SpotifyAuthManager spotifyAuthManager;
+    private ActivityResultLauncher<Intent> spotifyAuthLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -240,6 +244,44 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
         if (savedInstanceState == null) {
             loadInitialFragment();
         }
+
+        // Initialize Spotify auth manager
+        spotifyAuthManager = SpotifyAuthManager.getInstance(this);
+        
+        // Register for Spotify auth result
+        spotifyAuthLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    Uri uri = result.getData().getData();
+                    if (uri != null) {
+                        spotifyAuthManager.handleAuthResponse(uri, new SpotifyAuthManager.AuthCallback() {
+                            @Override
+                            public void onAuthSuccess() {
+                                runOnUiThread(() -> {
+                                    Toast.makeText(MainActivity.this, 
+                                        "Successfully authenticated with Spotify", 
+                                        Toast.LENGTH_SHORT).show();
+                                    // Update the Spotify button text in settings
+                                    if (settingsFragment != null) {
+                                        settingsFragment.updateSpotifyButtonState();
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onAuthFailure(String error) {
+                                runOnUiThread(() -> {
+                                    Toast.makeText(MainActivity.this, 
+                                        "Failed to authenticate with Spotify: " + error, 
+                                        Toast.LENGTH_LONG).show();
+                                });
+                            }
+                        });
+                    }
+                }
+            }
+        );
     }
 
     @Override
@@ -332,7 +374,45 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        
+        Log.d("MainActivity", "onActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode);
+        
+        // Handle Spotify authentication result
+        if (requestCode == 1234) { // SPOTIFY_AUTH_REQUEST_CODE
+            Log.d("MainActivity", "Handling Spotify auth result");
+            // The Custom Tab might not return RESULT_OK, so we check for the data regardless
+            Uri uri = data != null ? data.getData() : null;
+            if (uri != null) {
+                Log.d("MainActivity", "Got callback URI: " + uri.toString());
+                spotifyAuthManager.handleAuthResponse(uri, new SpotifyAuthManager.AuthCallback() {
+                    @Override
+                    public void onAuthSuccess() {
+                        runOnUiThread(() -> {
+                            Toast.makeText(MainActivity.this, 
+                                "Successfully authenticated with Spotify", 
+                                Toast.LENGTH_SHORT).show();
+                            if (settingsFragment != null) {
+                                settingsFragment.updateSpotifyButtonState();
+                            }
+                        });
+                    }
 
+                    @Override
+                    public void onAuthFailure(String error) {
+                        runOnUiThread(() -> {
+                            Toast.makeText(MainActivity.this, 
+                                "Failed to authenticate with Spotify: " + error, 
+                                Toast.LENGTH_LONG).show();
+                        });
+                    }
+                });
+            } else {
+                Log.e("MainActivity", "No callback URI in activity result");
+            }
+            return;
+        }
+
+        // Handle other activity results
         if (resultCode == RESULT_OK && data != null) {
             Fragment currentFragment = getSupportFragmentManager()
                     .findFragmentById(R.id.fragment_container);
@@ -1033,5 +1113,70 @@ public class MainActivity extends AppCompatActivity implements AnimeFragment.Und
             theme.equals("ocean") || 
             theme.equals("sunset")
         );
+    }
+
+    // Add this method to start Spotify authentication
+    public void startSpotifyAuth() {
+        SpotifyAuthManager spotifyAuthManager = SpotifyAuthManager.getInstance(this);
+        spotifyAuthManager.startAuth(this, new SpotifyAuthManager.AuthCallback() {
+            @Override
+            public void onAuthSuccess() {
+                runOnUiThread(() -> {
+                    Toast.makeText(MainActivity.this, "Successfully connected to Spotify", Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onAuthFailure(String error) {
+                runOnUiThread(() -> {
+                    Toast.makeText(MainActivity.this, "Failed to connect to Spotify: " + error, Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        Log.d("MainActivity", "onNewIntent called with: " + (intent.getData() != null ? intent.getData().toString() : "null data"));
+        
+        // Handle Spotify callback
+        if (intent.getData() != null) {
+            Uri uri = intent.getData();
+            Log.d("MainActivity", "URI scheme: " + uri.getScheme() + ", host: " + uri.getHost());
+            
+            if ("seen".equals(uri.getScheme()) && "spotify-auth".equals(uri.getHost())) {
+                Log.d("MainActivity", "Handling Spotify callback");
+                spotifyAuthManager.handleAuthResponse(uri, new SpotifyAuthManager.AuthCallback() {
+                    @Override
+                    public void onAuthSuccess() {
+                        Log.d("MainActivity", "Spotify auth success");
+                        runOnUiThread(() -> {
+                            Toast.makeText(MainActivity.this, 
+                                "Successfully authenticated with Spotify", 
+                                Toast.LENGTH_SHORT).show();
+                            // Update the Spotify button text in settings
+                            if (settingsFragment != null) {
+                                settingsFragment.updateSpotifyButtonState();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onAuthFailure(String error) {
+                        Log.e("MainActivity", "Spotify auth failure: " + error);
+                        runOnUiThread(() -> {
+                            Toast.makeText(MainActivity.this, 
+                                "Failed to authenticate with Spotify: " + error, 
+                                Toast.LENGTH_LONG).show();
+                        });
+                    }
+                });
+            } else {
+                Log.d("MainActivity", "Not a Spotify callback URI");
+            }
+        } else {
+            Log.d("MainActivity", "Intent has no data");
+        }
     }
 }

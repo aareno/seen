@@ -24,6 +24,8 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.aareno.seen.auth.SpotifyAuthManager;
+
 public class SettingsFragment extends Fragment {
     private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 123;
 
@@ -38,6 +40,7 @@ public class SettingsFragment extends Fragment {
     private CheckBox tvMoviesTabCheckbox;
     private boolean tabSettingsChanged = false;
     private Button signInButtonSettings;
+    private Button spotifySignInButton;
     private RadioGroup themeRadioGroup;
     private static final String PREF_THEME = "app_theme";
 
@@ -57,6 +60,7 @@ public class SettingsFragment extends Fragment {
         tvMoviesTabCheckbox = view.findViewById(R.id.tvMoviesTabCheckbox);
         adultContentSwitch = view.findViewById(R.id.adultContentSwitch);
         signInButtonSettings = view.findViewById(R.id.btn_sign_in_settings);
+        spotifySignInButton = view.findViewById(R.id.btn_spotify_sign_in);
         themeRadioGroup = view.findViewById(R.id.themeRadioGroup);
 
         /*
@@ -81,6 +85,7 @@ public class SettingsFragment extends Fragment {
         // Set up listeners
         setupListeners();
         setupSignInButton();
+        setupSpotifySignInButton();
         setupThemeListener();
         return view;
     }
@@ -344,6 +349,37 @@ public class SettingsFragment extends Fragment {
         });
     }
 
+    public void updateSpotifyButtonState() {
+        if (spotifySignInButton != null) {
+            SpotifyAuthManager spotifyAuthManager = SpotifyAuthManager.getInstance(requireContext());
+            String accessToken = spotifyAuthManager.getAccessToken();
+            spotifySignInButton.setText(accessToken != null ? "Disconnect Spotify" : "Connect Spotify");
+        }
+    }
+
+    private void setupSpotifySignInButton() {
+        if (getActivity() instanceof MainActivity) {
+            MainActivity main = (MainActivity) getActivity();
+            SpotifyAuthManager spotifyAuthManager = SpotifyAuthManager.getInstance(requireContext());
+            
+            // Update button text based on auth state
+            String accessToken = spotifyAuthManager.getAccessToken();
+            spotifySignInButton.setText(accessToken != null ? "Disconnect Spotify" : "Connect Spotify");
+
+            spotifySignInButton.setOnClickListener(v -> {
+                if (accessToken != null) {
+                    // Sign out
+                    spotifyAuthManager.signOut();
+                    spotifySignInButton.setText("Connect Spotify");
+                    Toast.makeText(requireContext(), "Disconnected from Spotify", Toast.LENGTH_SHORT).show();
+                } else {
+                    // Sign in
+                    main.startSpotifyAuth();
+                }
+            });
+        }
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -353,6 +389,9 @@ public class SettingsFragment extends Fragment {
             boolean isSignedIn = main.userAuthManager != null && main.userAuthManager.isUserSignedIn();
             signInButtonSettings.setText(isSignedIn ? "Sign Out" : "Sign In");
         }
+
+        // Update Spotify button text
+        updateSpotifyButtonState();
     }
 
     private void setupThemeListener() {
